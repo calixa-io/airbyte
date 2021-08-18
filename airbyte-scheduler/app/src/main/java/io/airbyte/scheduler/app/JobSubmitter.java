@@ -32,6 +32,8 @@ import io.airbyte.config.helpers.LogClientSingleton;
 import io.airbyte.scheduler.app.worker_run.TemporalWorkerRunFactory;
 import io.airbyte.scheduler.app.worker_run.WorkerRun;
 import io.airbyte.scheduler.models.Job;
+import io.airbyte.scheduler.models.JobStatus;
+import io.airbyte.scheduler.persistence.JobNotifier;
 import io.airbyte.scheduler.persistence.JobPersistence;
 import io.airbyte.scheduler.persistence.job_tracker.JobTracker;
 import io.airbyte.scheduler.persistence.job_tracker.JobTracker.JobState;
@@ -52,6 +54,7 @@ public class JobSubmitter implements Runnable {
   private final JobPersistence persistence;
   private final TemporalWorkerRunFactory temporalWorkerRunFactory;
   private final JobTracker jobTracker;
+  private final JobNotifier jobNotifier;
 
   // See attemptJobSubmit() to understand the need for this Concurrent Set.
   private final Set<Long> runningJobs = Sets.newConcurrentHashSet();
@@ -59,11 +62,13 @@ public class JobSubmitter implements Runnable {
   public JobSubmitter(final ExecutorService threadPool,
                       final JobPersistence persistence,
                       final TemporalWorkerRunFactory temporalWorkerRunFactory,
-                      final JobTracker jobTracker) {
+                      final JobTracker jobTracker,
+                      final JobNotifier jobNotifier) {
     this.threadPool = threadPool;
     this.persistence = persistence;
     this.temporalWorkerRunFactory = temporalWorkerRunFactory;
     this.jobTracker = jobTracker;
+    this.jobNotifier = jobNotifier;
   }
 
   @Override
@@ -145,6 +150,9 @@ public class JobSubmitter implements Runnable {
         })
         .setOnFinish(() -> {
           runningJobs.remove(job.getId());
+          if (job.getStatus() == JobStatus.SUCCEEDED) {
+            jobNotifier.successJob(job);
+          }
           MDC.clear();
         })
         .build());

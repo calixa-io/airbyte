@@ -1466,6 +1466,12 @@ components:
       required:
         - webhook
       properties:
+        sendOnSuccess:
+          type: boolean
+          default: false
+        sendOnFailure:
+          type: boolean
+          default: true
         webhook:
           type: string
     NotificationType:

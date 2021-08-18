@@ -32,7 +32,11 @@ const NotificationPage: React.FC = () => {
     await updateData({ ...workspace, ...data });
   };
 
-  const onSubmitWebhook = async (data: { webhook: string }) => {
+  const onSubmitWebhook = async (data: {
+    webhook: string;
+    sendOnSuccess: boolean;
+    sendOnFailure: boolean;
+  }) => {
     setSuccessWebhookMessage(null);
     setErrorWebhookMessage(null);
     try {
@@ -51,14 +55,26 @@ const NotificationPage: React.FC = () => {
     }
   };
 
-  const onTestWebhook = async (data: { webhook: string }) => {
-    await testWebhook(data.webhook);
+  const onTestWebhook = async (data: {
+    webhook: string;
+    sendOnSuccess: boolean;
+    sendOnFailure: boolean;
+  }) => {
+    await testWebhook(data.webhook, data.sendOnSuccess, data.sendOnFailure);
   };
 
   const initialWebhookUrl =
     workspace.notifications && workspace.notifications.length
       ? workspace.notifications[0].slackConfiguration.webhook
       : "";
+  const initialSendOnSuccess =
+    workspace.notifications && workspace.notifications.length
+      ? workspace.notifications[0].slackConfiguration.sendOnSuccess
+      : false;
+  const initialSendOnFailure =
+    workspace.notifications && workspace.notifications.length
+      ? workspace.notifications[0].slackConfiguration.sendOnFailure
+      : false;
 
   return (
     <>
@@ -70,7 +86,11 @@ const NotificationPage: React.FC = () => {
       >
         <Content>
           <WebHookForm
-            notificationUrl={initialWebhookUrl}
+            webhook={{
+              notificationUrl: initialWebhookUrl,
+              sendOnSuccess: initialSendOnSuccess,
+              sendOnFailure: initialSendOnFailure,
+            }}
             onSubmit={onSubmitWebhook}
             onTest={onTestWebhook}
             errorMessage={errorWebhookMessage}
