@@ -804,7 +804,18 @@ class SourceMixpanel(AbstractSource):
         :param logger:  logger object
         :return Tuple[bool, any]: (True, None) if the input config can be used to connect to the API successfully, (False, error) otherwise.
         """
-        auth = TokenAuthenticatorBase64(token=config["api_secret"])
+        auth = None
+        try:
+            auth = TokenAuthenticatorBase64(token=config["api_secret"])
+        except KeyError:
+            try:
+                auth = TokenAuthenticatorBase64(token=config["serviceaccount_username"] + ":" + config["serviceaccount_secret"])
+            except KeyError:
+                auth = None
+
+        if auth == None:
+           return False, KeyError("The requested service account or api_secret was not found in the source.")
+
         funnels = FunnelsList(authenticator=auth, **config)
         try:
             response = requests.request(
