@@ -5,6 +5,7 @@
 package io.airbyte.integrations.destination.pubsub;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.api.gax.batching.BatchingSettings;
 import com.google.api.gax.core.FixedCredentialsProvider;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.pubsub.v1.Publisher;
@@ -30,6 +31,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.threeten.bp.Duration;
 
 public class PubsubConsumer extends FailureTrackingAirbyteMessageConsumer {
 
@@ -64,6 +66,12 @@ public class PubsubConsumer extends FailureTrackingAirbyteMessageConsumer {
     final ServiceAccountCredentials credentials = ServiceAccountCredentials
         .fromStream(new ByteArrayInputStream(credentialsString.getBytes(Charsets.UTF_8)));
     publisher = Publisher.newBuilder(topic)
+        .setBatchingSettings(BatchingSettings.newBuilder()
+            .setIsEnabled(true)
+            .setDelayThreshold(Duration.ofSeconds(1))
+            .setElementCountThreshold(1000L)
+            .setRequestByteThreshold(10 * 1024 * 1024L) // 10 MiB
+            .build())
         .setCredentialsProvider(FixedCredentialsProvider.create(credentials)).build();
     for (final ConfiguredAirbyteStream configStream : catalog.getStreams()) {
       final Map<String, String> attrs = Maps.newHashMap();
