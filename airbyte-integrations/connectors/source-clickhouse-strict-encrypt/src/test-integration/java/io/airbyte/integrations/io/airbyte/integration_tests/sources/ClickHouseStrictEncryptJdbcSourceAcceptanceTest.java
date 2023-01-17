@@ -25,7 +25,7 @@ import io.airbyte.integrations.source.clickhouse.ClickHouseStrictEncryptSource;
 import io.airbyte.integrations.source.jdbc.AbstractJdbcSource;
 import io.airbyte.integrations.source.jdbc.test.JdbcSourceAcceptanceTest;
 import io.airbyte.integrations.util.HostPortResolver;
-import io.airbyte.protocol.models.ConnectorSpecification;
+import io.airbyte.protocol.models.v0.ConnectorSpecification;
 import java.sql.JDBCType;
 import java.time.Duration;
 import java.util.List;
@@ -82,6 +82,11 @@ public class ClickHouseStrictEncryptJdbcSourceAcceptanceTest extends JdbcSourceA
 
   @BeforeAll
   static void init() {
+    CREATE_TABLE_WITHOUT_CURSOR_TYPE_QUERY = "CREATE TABLE %s (%s Array(UInt32)) ENGINE = MergeTree ORDER BY tuple();";
+    INSERT_TABLE_WITHOUT_CURSOR_TYPE_QUERY = "INSERT INTO %s VALUES([12, 13, 0, 1]);)";
+    CREATE_TABLE_WITH_NULLABLE_CURSOR_TYPE_QUERY = "CREATE TABLE %s (%s Nullable(VARCHAR(20))) ENGINE = MergeTree ORDER BY tuple();";
+    INSERT_TABLE_WITH_NULLABLE_CURSOR_TYPE_QUERY = "INSERT INTO %s VALUES('Hello world :)');";
+
     container = new GenericContainer<>(new ImageFromDockerfile("clickhouse-test")
         .withFileFromClasspath("Dockerfile", "docker/Dockerfile")
         .withFileFromClasspath("clickhouse_certs.sh", "docker/clickhouse_certs.sh"))

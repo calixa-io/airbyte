@@ -15,7 +15,6 @@ import io.airbyte.commons.json.Jsons;
 import io.airbyte.db.DataTypeUtils;
 import io.airbyte.db.JdbcCompatibleSourceOperations;
 import java.math.BigDecimal;
-import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -28,8 +27,6 @@ import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.time.chrono.IsoEra;
 import java.util.Collections;
-import java.util.List;
-import java.util.StringJoiner;
 import javax.xml.bind.DatatypeConverter;
 
 /**
@@ -58,7 +55,7 @@ public abstract class AbstractJdbcCompatibleSourceOperations<Datatype> implement
       }
 
       // convert to java types that will convert into reasonable json.
-      setJsonField(queryContext, i, jsonNode);
+      copyToJsonField(queryContext, i, jsonNode);
     }
 
     return jsonNode;
@@ -229,47 +226,19 @@ public abstract class AbstractJdbcCompatibleSourceOperations<Datatype> implement
     preparedStatement.setBytes(parameterIndex, DatatypeConverter.parseHexBinary(value));
   }
 
-  @Override
-  public String enquoteIdentifierList(final Connection connection, final List<String> identifiers) throws SQLException {
-    final StringJoiner joiner = new StringJoiner(",");
-    for (final String col : identifiers) {
-      final String s = enquoteIdentifier(connection, col);
-      joiner.add(s);
-    }
-    return joiner.toString();
-  }
-
-  @Override
-  public String enquoteIdentifier(final Connection connection, final String identifier) throws SQLException {
-    final String identifierQuoteString = connection.getMetaData().getIdentifierQuoteString();
-
-    return identifierQuoteString + identifier + identifierQuoteString;
-  }
-
-  @Override
-  public String getFullyQualifiedTableName(final String schemaName, final String tableName) {
-    return JdbcUtils.getFullyQualifiedTableName(schemaName, tableName);
-  }
-
-  @Override
-  public String getFullyQualifiedTableNameWithQuoting(final Connection connection, final String schemaName, final String tableName)
-      throws SQLException {
-    final String quotedTableName = enquoteIdentifier(connection, tableName);
-    return schemaName != null ? enquoteIdentifier(connection, schemaName) + "." + quotedTableName : quotedTableName;
-  }
-
-  protected <ObjectType> ObjectType getObject(ResultSet resultSet, int index, Class<ObjectType> clazz) throws SQLException {
+  protected <ObjectType> ObjectType getObject(final ResultSet resultSet, final int index, final Class<ObjectType> clazz) throws SQLException {
     return resultSet.getObject(index, clazz);
   }
 
-  protected void putTimeWithTimezone(ObjectNode node, String columnName, ResultSet resultSet, int index) throws SQLException {
-    OffsetTime timetz = getObject(resultSet, index, OffsetTime.class);
+  protected void putTimeWithTimezone(final ObjectNode node, final String columnName, final ResultSet resultSet, final int index) throws SQLException {
+    final OffsetTime timetz = getObject(resultSet, index, OffsetTime.class);
     node.put(columnName, timetz.format(TIMETZ_FORMATTER));
   }
 
-  protected void putTimestampWithTimezone(ObjectNode node, String columnName, ResultSet resultSet, int index) throws SQLException {
-    OffsetDateTime timestamptz = getObject(resultSet, index, OffsetDateTime.class);
-    LocalDate localDate = timestamptz.toLocalDate();
+  protected void putTimestampWithTimezone(final ObjectNode node, final String columnName, final ResultSet resultSet, final int index)
+      throws SQLException {
+    final OffsetDateTime timestamptz = getObject(resultSet, index, OffsetDateTime.class);
+    final LocalDate localDate = timestamptz.toLocalDate();
     node.put(columnName, resolveEra(localDate, timestamptz.format(TIMESTAMPTZ_FORMATTER)));
   }
 
@@ -283,7 +252,7 @@ public abstract class AbstractJdbcCompatibleSourceOperations<Datatype> implement
    *
    * You most likely would prefer to call one of the overloaded methods, which accept temporal types.
    */
-  public static String resolveEra(boolean isBce, String value) {
+  public static String resolveEra(final boolean isBce, final String value) {
     String mangledValue = value;
     if (isBce) {
       if (mangledValue.startsWith("-")) {
@@ -296,11 +265,11 @@ public abstract class AbstractJdbcCompatibleSourceOperations<Datatype> implement
     return mangledValue;
   }
 
-  public static boolean isBce(LocalDate date) {
+  public static boolean isBce(final LocalDate date) {
     return date.getEra().equals(IsoEra.BCE);
   }
 
-  public static String resolveEra(LocalDate date, String value) {
+  public static String resolveEra(final LocalDate date, final String value) {
     return resolveEra(isBce(date), value);
   }
 
@@ -311,14 +280,14 @@ public abstract class AbstractJdbcCompatibleSourceOperations<Datatype> implement
    * This is technically kind of sketchy due to ancient timestamps being weird (leap years, etc.), but
    * my understanding is that {@link #ONE_CE} has the same weirdness, so it cancels out.
    */
-  public static String resolveEra(Date date, String value) {
+  public static String resolveEra(final Date date, final String value) {
     return resolveEra(date.before(ONE_CE), value);
   }
 
   /**
    * See {@link #resolveEra(Date, String)} for explanation.
    */
-  public static String resolveEra(Timestamp timestamp, String value) {
+  public static String resolveEra(final Timestamp timestamp, final String value) {
     return resolveEra(timestamp.before(ONE_CE), value);
   }
 

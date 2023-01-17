@@ -7,12 +7,13 @@ package io.airbyte.integrations.source.postgres;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import io.airbyte.commons.json.Jsons;
 import io.airbyte.db.jdbc.JdbcDatabase;
-import io.airbyte.integrations.base.AirbyteStreamNameNamespacePair;
 import io.airbyte.integrations.debezium.internals.DebeziumEventUtils;
-import io.airbyte.protocol.models.AirbyteStream;
-import io.airbyte.protocol.models.SyncMode;
+import io.airbyte.protocol.models.v0.AirbyteStream;
+import io.airbyte.protocol.models.v0.AirbyteStreamNameNamespacePair;
+import io.airbyte.protocol.models.v0.SyncMode;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -44,6 +45,17 @@ public final class PostgresCdcCatalogHelper {
     }
 
     return stream;
+  }
+
+  /**
+   * This method is used for CDC sync in order to overwrite sync modes for cursor fields cause cdc use
+   * another cursor logic
+   *
+   * @param stream - airbyte stream
+   * @return will return list of sync modes
+   */
+  public static AirbyteStream overrideSyncModes(final AirbyteStream stream) {
+    return stream.withSupportedSyncModes(Lists.newArrayList(SyncMode.FULL_REFRESH, SyncMode.INCREMENTAL));
   }
 
   /*

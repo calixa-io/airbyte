@@ -99,7 +99,7 @@ public class BigQuerySourceOperations implements SourceOperations<BigQueryResult
           }
         }
       } catch (final UnsupportedOperationException e) {
-        LOGGER.error("Failed to parse Object field with name: ", fieldName, e.getMessage());
+        LOGGER.error("Failed to parse Object field with name: {}, {}", fieldName, e.getMessage());
       }
     }
   }
@@ -116,7 +116,7 @@ public class BigQuerySourceOperations implements SourceOperations<BigQueryResult
   }
 
   @Override
-  public JsonSchemaType getJsonType(final StandardSQLTypeName bigQueryType) {
+  public JsonSchemaType getAirbyteType(final StandardSQLTypeName bigQueryType) {
     return switch (bigQueryType) {
       case BOOL -> JsonSchemaType.BOOLEAN;
       case INT64 -> JsonSchemaType.INTEGER;

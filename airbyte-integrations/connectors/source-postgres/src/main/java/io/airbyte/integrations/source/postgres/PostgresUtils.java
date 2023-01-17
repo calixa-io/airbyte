@@ -4,13 +4,35 @@
 
 package io.airbyte.integrations.source.postgres;
 
+import static io.airbyte.integrations.source.postgres.PostgresType.BIGINT;
+import static io.airbyte.integrations.source.postgres.PostgresType.DATE;
+import static io.airbyte.integrations.source.postgres.PostgresType.DECIMAL;
+import static io.airbyte.integrations.source.postgres.PostgresType.DOUBLE;
+import static io.airbyte.integrations.source.postgres.PostgresType.FLOAT;
+import static io.airbyte.integrations.source.postgres.PostgresType.INTEGER;
+import static io.airbyte.integrations.source.postgres.PostgresType.LONGVARCHAR;
+import static io.airbyte.integrations.source.postgres.PostgresType.NUMERIC;
+import static io.airbyte.integrations.source.postgres.PostgresType.NVARCHAR;
+import static io.airbyte.integrations.source.postgres.PostgresType.REAL;
+import static io.airbyte.integrations.source.postgres.PostgresType.SMALLINT;
+import static io.airbyte.integrations.source.postgres.PostgresType.TIME;
+import static io.airbyte.integrations.source.postgres.PostgresType.TIMESTAMP;
+import static io.airbyte.integrations.source.postgres.PostgresType.TIMESTAMP_WITH_TIMEZONE;
+import static io.airbyte.integrations.source.postgres.PostgresType.TIME_WITH_TIMEZONE;
+import static io.airbyte.integrations.source.postgres.PostgresType.TINYINT;
+import static io.airbyte.integrations.source.postgres.PostgresType.VARCHAR;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class PostgresUtils {
+
+  public static final Set<PostgresType> ALLOWED_CURSOR_TYPES = Set.of(TIMESTAMP, TIMESTAMP_WITH_TIMEZONE, TIME, TIME_WITH_TIMEZONE,
+      DATE, TINYINT, SMALLINT, INTEGER, BIGINT, FLOAT, DOUBLE, REAL, NUMERIC, DECIMAL, NVARCHAR, VARCHAR, LONGVARCHAR);
 
   private static final Logger LOGGER = LoggerFactory.getLogger(PostgresUtils.class);
 
@@ -30,6 +52,14 @@ public class PostgresUtils {
         && config.get("replication_method").hasNonNull("publication");
     LOGGER.info("using CDC: {}", isCdc);
     return isCdc;
+  }
+
+  public static boolean shouldFlushAfterSync(final JsonNode config) {
+    final boolean shouldFlushAfterSync = config.hasNonNull("replication_method")
+        && config.get("replication_method").hasNonNull("lsn_commit_behaviour")
+        && config.get("replication_method").get("lsn_commit_behaviour").asText().equals("After loading Data in the destination");
+    LOGGER.info("Should flush after sync: {}", shouldFlushAfterSync);
+    return shouldFlushAfterSync;
   }
 
   public static Optional<Integer> getFirstRecordWaitSeconds(final JsonNode config) {

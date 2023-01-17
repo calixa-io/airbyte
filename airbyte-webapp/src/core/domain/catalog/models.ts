@@ -3,12 +3,17 @@ export interface SyncSchemaField {
   type: string;
   key: string;
   path: string[];
-
+  airbyte_type?: string;
+  format?: string;
   fields?: SyncSchemaField[];
 }
 
 export class SyncSchemaFieldObject {
   static isPrimitive(field: SyncSchemaField): boolean {
     return !(field.type === "object" || field.type === "array");
+  }
+
+  static isNestedField(field: SyncSchemaField): boolean {
+    return field.path.length > 1;
   }
 }

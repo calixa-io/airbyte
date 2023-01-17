@@ -1,16 +1,11 @@
 import React, { useMemo } from "react";
-import { useIntl } from "react-intl";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useEffectOnce } from "react-use";
 
-import ApiErrorBoundary from "components/ApiErrorBoundary";
+import { ApiErrorBoundary } from "components/common/ApiErrorBoundary";
 
-import { useConfig } from "config";
 import { useAnalyticsIdentifyUser, useAnalyticsRegisterValues } from "hooks/services/Analytics";
-import { useTrackPageAnalytics } from "hooks/services/Analytics/useTrackPageAnalytics";
 import { useApiHealthPoll } from "hooks/services/Health";
-import { useNotificationService } from "hooks/services/Notification";
-import { OnboardingServiceProvider } from "hooks/services/Onboarding";
 import { useCurrentWorkspace } from "hooks/services/useWorkspace";
 import { useListWorkspaces } from "services/workspaces/WorkspacesService";
 import { storeUtmFromQuery } from "utils/utmStorage";
@@ -18,30 +13,20 @@ import { CompleteOauthRequest } from "views/CompleteOauthRequest";
 import MainView from "views/layout/MainView";
 
 import { WorkspaceRead } from "../core/request/AirbyteClient";
-import ConnectionPage from "./ConnectionPage";
-import DestinationPage from "./DestinationPage";
-import OnboardingPage from "./OnboardingPage";
-import PreferencesPage from "./PreferencesPage";
-import { RoutePaths } from "./routePaths";
-import SettingsPage from "./SettingsPage";
-import SourcesPage from "./SourcesPage";
+import { RoutePaths, DestinationPaths } from "./routePaths";
 
-function useDemo() {
-  const { formatMessage } = useIntl();
-  const config = useConfig();
+const ConnectionsRoutes = React.lazy(() => import("./connections/ConnectionsRoutes"));
+const CreateConnectionPage = React.lazy(() => import("./connections/CreateConnectionPage"));
+const ConnectorBuilderPage = React.lazy(() => import("./ConnectorBuilderPage/ConnectorBuilderPage"));
 
-  const demoNotification = useMemo(
-    () => ({
-      id: "demo.message",
-      title: formatMessage({ id: "demo.message.title" }),
-      text: formatMessage({ id: "demo.message.body" }),
-      nonClosable: true,
-    }),
-    [formatMessage]
-  );
-
-  useNotificationService(config.isDemo ? demoNotification : undefined);
-}
+const AllDestinationsPage = React.lazy(() => import("./destination/AllDestinationsPage"));
+const CreateDestinationPage = React.lazy(() => import("./destination/CreateDestinationPage"));
+const DestinationItemPage = React.lazy(() => import("./destination/DestinationItemPage"));
+const DestinationOverviewPage = React.lazy(() => import("./destination/DestinationOverviewPage"));
+const DestinationSettingsPage = React.lazy(() => import("./destination/DestinationSettingsPage"));
+const PreferencesPage = React.lazy(() => import("./PreferencesPage"));
+const SettingsPage = React.lazy(() => import("./SettingsPage"));
+const SourcesPage = React.lazy(() => import("./SourcesPage"));
 
 const useAddAnalyticsContextForWorkspace = (workspace: WorkspaceRead): void => {
   const analyticsContext = useMemo(
@@ -53,25 +38,27 @@ const useAddAnalyticsContextForWorkspace = (workspace: WorkspaceRead): void => {
   );
   useAnalyticsRegisterValues(analyticsContext);
   useAnalyticsIdentifyUser(workspace.workspaceId);
-  useTrackPageAnalytics();
 };
 
-const MainViewRoutes: React.FC<{ workspace: WorkspaceRead }> = ({ workspace }) => {
+const MainViewRoutes: React.FC = () => {
   return (
     <MainView>
       <ApiErrorBoundary>
         <Routes>
-          <Route path={`${RoutePaths.Destination}/*`} element={<DestinationPage />} />
+          <Route path={RoutePaths.Destination}>
+            <Route index element={<AllDestinationsPage />} />
+            <Route path={DestinationPaths.NewDestination} element={<CreateDestinationPage />} />
+            <Route path={DestinationPaths.NewConnection} element={<CreateConnectionPage />} />
+            <Route path={DestinationPaths.Root} element={<DestinationItemPage />}>
+              <Route path={DestinationPaths.Settings} element={<DestinationSettingsPage />} />
+              <Route index element={<DestinationOverviewPage />} />
+            </Route>
+          </Route>
           <Route path={`${RoutePaths.Source}/*`} element={<SourcesPage />} />
-          <Route path={`${RoutePaths.Connections}/*`} element={<ConnectionPage />} />
+          <Route path={`${RoutePaths.Connections}/*`} element={<ConnectionsRoutes />} />
           <Route path={`${RoutePaths.Settings}/*`} element={<SettingsPage />} />
-          {workspace.displaySetupWizard ? (
-            <Route path={`${RoutePaths.Onboarding}/*`} element={<OnboardingPage />} />
-          ) : null}
-          <Route
-            path="*"
-            element={<Navigate to={workspace.displaySetupWizard ? RoutePaths.Onboarding : RoutePaths.Connections} />}
-          />
+
+          <Route path="*" element={<Navigate to={RoutePaths.Connections} />} />
         </Routes>
       </ApiErrorBoundary>
     </MainView>
@@ -101,15 +88,9 @@ export const AutoSelectFirstWorkspace: React.FC<{ includePath?: boolean }> = ({ 
 const RoutingWithWorkspace: React.FC = () => {
   const workspace = useCurrentWorkspace();
   useAddAnalyticsContextForWorkspace(workspace);
-  useTrackPageAnalytics();
   useApiHealthPoll();
-  useDemo();
 
-  return (
-    <OnboardingServiceProvider>
-      {workspace.initialSetupComplete ? <MainViewRoutes workspace={workspace} /> : <PreferencesRoutes />}
-    </OnboardingServiceProvider>
-  );
+  return workspace.initialSetupComplete ? <MainViewRoutes /> : <PreferencesRoutes />;
 };
 
 export const Routing: React.FC = () => {
@@ -129,6 +110,7 @@ export const Routing: React.FC = () => {
   );
   return (
     <Routes>
+      <Route path={`${RoutePaths.ConnectorBuilder}/*`} element={<ConnectorBuilderPage />} />
       {OldRoutes}
       <Route path={RoutePaths.AuthFlow} element={<CompleteOauthRequest />} />
       <Route path={`${RoutePaths.Workspaces}/:workspaceId/*`} element={<RoutingWithWorkspace />} />

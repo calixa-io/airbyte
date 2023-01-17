@@ -22,21 +22,21 @@ import io.airbyte.integrations.source.jdbc.AbstractJdbcSource;
 import io.airbyte.integrations.source.jdbc.test.JdbcSourceAcceptanceTest;
 import io.airbyte.integrations.source.relationaldb.models.DbState;
 import io.airbyte.integrations.source.relationaldb.models.DbStreamState;
-import io.airbyte.protocol.models.AirbyteCatalog;
-import io.airbyte.protocol.models.AirbyteConnectionStatus;
-import io.airbyte.protocol.models.AirbyteConnectionStatus.Status;
-import io.airbyte.protocol.models.AirbyteMessage;
-import io.airbyte.protocol.models.AirbyteMessage.Type;
-import io.airbyte.protocol.models.AirbyteRecordMessage;
-import io.airbyte.protocol.models.AirbyteStateMessage;
-import io.airbyte.protocol.models.AirbyteStream;
-import io.airbyte.protocol.models.CatalogHelpers;
-import io.airbyte.protocol.models.ConfiguredAirbyteCatalog;
-import io.airbyte.protocol.models.ConfiguredAirbyteStream;
-import io.airbyte.protocol.models.DestinationSyncMode;
 import io.airbyte.protocol.models.Field;
 import io.airbyte.protocol.models.JsonSchemaType;
-import io.airbyte.protocol.models.SyncMode;
+import io.airbyte.protocol.models.v0.AirbyteCatalog;
+import io.airbyte.protocol.models.v0.AirbyteConnectionStatus;
+import io.airbyte.protocol.models.v0.AirbyteConnectionStatus.Status;
+import io.airbyte.protocol.models.v0.AirbyteMessage;
+import io.airbyte.protocol.models.v0.AirbyteMessage.Type;
+import io.airbyte.protocol.models.v0.AirbyteRecordMessage;
+import io.airbyte.protocol.models.v0.AirbyteStateMessage;
+import io.airbyte.protocol.models.v0.AirbyteStream;
+import io.airbyte.protocol.models.v0.CatalogHelpers;
+import io.airbyte.protocol.models.v0.ConfiguredAirbyteCatalog;
+import io.airbyte.protocol.models.v0.ConfiguredAirbyteStream;
+import io.airbyte.protocol.models.v0.DestinationSyncMode;
+import io.airbyte.protocol.models.v0.SyncMode;
 import java.sql.JDBCType;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -189,6 +189,26 @@ class CockroachDbJdbcSourceAcceptanceTest extends JdbcSourceAcceptanceTest {
   }
 
   @Test
+  protected void testDiscoverWithNonCursorFields() throws Exception {
+    /*
+     * this test is not valid for cockroach db, when table has no introduced PK it will add a hidden
+     * rowid which will be taken from db , it as well present on airbyte UI thus there will be no case
+     * to create a table without cursor field.
+     * https://www.cockroachlabs.com/docs/stable/serial.html#auto-incrementing-is-not-always-sequential
+     */
+  }
+
+  @Test
+  protected void testDiscoverWithNullableCursorFields() throws Exception {
+    /*
+     * this test is not valid for cockroach db, when table has no introduced PK it will add a hidden
+     * rowid which will be taken from db , it as well present on airbyte UI thus there will be no case
+     * to create a table without cursor field.
+     * https://www.cockroachlabs.com/docs/stable/serial.html#auto-incrementing-is-not-always-sequential
+     */
+  }
+
+  @Test
   void testCheckFailure() throws Exception {
     ((ObjectNode) config).put(JdbcUtils.PASSWORD_KEY, "fake");
     ((ObjectNode) config).put(JdbcUtils.USERNAME_KEY, "fake");
@@ -311,7 +331,8 @@ class CockroachDbJdbcSourceAcceptanceTest extends JdbcSourceAcceptanceTest {
                     .withStreamName(streamName)
                     .withStreamNamespace(namespace)
                     .withCursorField(ImmutableList.of(COL_ID))
-                    .withCursor("5")))))));
+                    .withCursor("5")
+                    .withCursorRecordCount(1L)))))));
 
     setEmittedAtToNull(actualMessagesSecondSync);
 
@@ -443,7 +464,8 @@ class CockroachDbJdbcSourceAcceptanceTest extends JdbcSourceAcceptanceTest {
                         .withStreamName(streamName)
                         .withStreamNamespace(namespace)
                         .withCursorField(ImmutableList.of(COL_ID))
-                        .withCursor("3"),
+                        .withCursor("3")
+                        .withCursorRecordCount(1L),
                     new DbStreamState()
                         .withStreamName(streamName2)
                         .withStreamNamespace(namespace)
@@ -461,12 +483,14 @@ class CockroachDbJdbcSourceAcceptanceTest extends JdbcSourceAcceptanceTest {
                         .withStreamName(streamName)
                         .withStreamNamespace(namespace)
                         .withCursorField(ImmutableList.of(COL_ID))
-                        .withCursor("3"),
+                        .withCursor("3")
+                        .withCursorRecordCount(1L),
                     new DbStreamState()
                         .withStreamName(streamName2)
                         .withStreamNamespace(namespace)
                         .withCursorField(ImmutableList.of(COL_ID))
-                        .withCursor("3")))))));
+                        .withCursor("3")
+                        .withCursorRecordCount(1L)))))));
 
     setEmittedAtToNull(actualMessagesFirstSync);
 

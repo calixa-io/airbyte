@@ -8,7 +8,7 @@ The Airbyte Python CDK is a framework for rapidly developing production-grade Ai
 
 The CDK provides an improved developer experience by providing basic implementation structure and abstracting away low-level glue boilerplate.
 
-This document is a general introduction to the CDK. Readers should have basic familiarity with the [Airbyte Specification](https://docs.airbyte.io/architecture/airbyte-protocol) before proceeding.
+This document is a general introduction to the CDK. Readers should have basic familiarity with the [Airbyte Specification](https://docs.airbyte.com/understanding-airbyte/airbyte-protocol/) before proceeding.
 
 If you have any issues with troubleshooting or want to learn more about the CDK from the Airbyte team, head to [the Connector Development section of our Discourse forum](https://discuss.airbyte.io/c/connector-development/16) to inquire further!
 
@@ -99,9 +99,8 @@ All tests are located in the `unit_tests` directory. Run `pytest --cov=airbyte_c
 
 #### Publishing a new version to PyPi
 
-1. Bump the package version in `setup.py`
-2. Open a PR
-3. An Airbyte member must comment `/publish-cdk dry-run=true` to publish the package to test.pypi.org or `/publish-cdk dry-run=false` to publish it to the real index of pypi.org.
+1. Open a PR
+2. Once it is approved and merge, an Airbyte member must run the `Publish CDK Manually` workflow using `release-type=major|manor|patch` and setting the changelog message.
 
 ## Coming Soon
 

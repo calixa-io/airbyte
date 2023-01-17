@@ -1,21 +1,21 @@
 import React, { Suspense } from "react";
 import { useIntl } from "react-intl";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import { LoadingPage } from "components";
 
 import { useExperiment } from "hooks/services/Experiment";
-import useRouter from "hooks/useRouter";
-import { CloudRoutes } from "packages/cloud/cloudRoutes";
+import { CloudRoutes } from "packages/cloud/cloudRoutePaths";
 import { useAuthService } from "packages/cloud/services/auth/AuthService";
 import { FirebaseActionRoute } from "packages/cloud/views/FirebaseActionRoute";
 
 import styles from "./Auth.module.scss";
 import FormContent from "./components/FormContent";
-import { PersonQuoteCover } from "./components/PersonQuoteCover";
-import { LoginPage } from "./LoginPage";
-import { ResetPasswordPage } from "./ResetPasswordPage";
-import { SignupPage } from "./SignupPage";
+
+const PersonQuoteCover = React.lazy(() => import("./components/PersonQuoteCover"));
+const LoginPage = React.lazy(() => import("./LoginPage"));
+const ResetPasswordPage = React.lazy(() => import("./ResetPasswordPage"));
+const SignupPage = React.lazy(() => import("./SignupPage"));
 
 const hasValidRightSideUrl = (url?: string): boolean => {
   if (url) {
@@ -34,8 +34,8 @@ const hasValidRightSideUrl = (url?: string): boolean => {
   return false;
 };
 
-const Auth: React.FC = () => {
-  const { pathname, location } = useRouter();
+export const Auth: React.FC = () => {
+  const { pathname } = useLocation();
   const { formatMessage } = useIntl();
   const { loggedOut } = useAuthService();
   const rightSideUrl = useExperiment("authPage.rightSideUrl", undefined);
@@ -54,7 +54,13 @@ const Auth: React.FC = () => {
               <Route path={CloudRoutes.FirebaseAction} element={<FirebaseActionRoute />} />
               <Route
                 path="*"
-                element={<Navigate to={`${CloudRoutes.Login}${loggedOut ? "" : `?from=${location.pathname}`}`} />}
+                element={
+                  <Navigate
+                    to={`${CloudRoutes.Login}${
+                      loggedOut && pathname.includes("/settings/account") ? "" : `?from=${pathname}`
+                    }`}
+                  />
+                }
               />
             </Routes>
           </Suspense>
@@ -75,5 +81,3 @@ const Auth: React.FC = () => {
     </div>
   );
 };
-
-export default Auth;
