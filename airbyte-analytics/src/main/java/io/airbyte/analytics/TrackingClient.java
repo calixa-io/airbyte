@@ -6,7 +6,6 @@ package io.airbyte.analytics;
 
 import java.util.Map;
 import java.util.UUID;
-import javax.annotation.Nullable;
 
 /**
  * General interface for user level Airbyte usage reporting. We use Segment for behavioural
@@ -29,8 +28,8 @@ public interface TrackingClient {
 
   void alias(UUID workspaceId, String previousCustomerId);
 
-  void track(@Nullable UUID workspaceId, String action);
+  void track(UUID workspaceId, String action);
 
-  void track(@Nullable UUID workspaceId, String action, Map<String, Object> metadata);
+  void track(UUID workspaceId, String action, Map<String, Object> metadata);
 
 }

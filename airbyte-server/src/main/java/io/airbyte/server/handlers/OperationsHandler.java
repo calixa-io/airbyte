@@ -16,17 +16,18 @@ import io.airbyte.api.model.generated.OperationRead;
 import io.airbyte.api.model.generated.OperationReadList;
 import io.airbyte.api.model.generated.OperationUpdate;
 import io.airbyte.api.model.generated.OperatorConfiguration;
+import io.airbyte.api.model.generated.OperatorNormalization.OptionEnum;
 import io.airbyte.commons.enums.Enums;
 import io.airbyte.config.ConfigSchema;
+import io.airbyte.config.OperatorDbt;
+import io.airbyte.config.OperatorNormalization;
+import io.airbyte.config.OperatorNormalization.Option;
 import io.airbyte.config.StandardSync;
 import io.airbyte.config.StandardSyncOperation;
 import io.airbyte.config.StandardSyncOperation.OperatorType;
 import io.airbyte.config.persistence.ConfigNotFoundException;
 import io.airbyte.config.persistence.ConfigRepository;
-import io.airbyte.server.converters.OperationsConverter;
 import io.airbyte.validation.json.JsonValidationException;
-import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -34,21 +35,19 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
 
-@Singleton
 public class OperationsHandler {
 
   private final ConfigRepository configRepository;
   private final Supplier<UUID> uuidGenerator;
 
-  @Inject
-  public OperationsHandler(final ConfigRepository configRepository) {
-    this(configRepository, UUID::randomUUID);
-  }
-
   @VisibleForTesting
   OperationsHandler(final ConfigRepository configRepository, final Supplier<UUID> uuidGenerator) {
     this.configRepository = configRepository;
     this.uuidGenerator = uuidGenerator;
+  }
+
+  public OperationsHandler(final ConfigRepository configRepository) {
+    this(configRepository, UUID::randomUUID);
   }
 
   public CheckOperationRead checkOperation(final OperatorConfiguration operationCheck) {
@@ -69,25 +68,34 @@ public class OperationsHandler {
     return persistOperation(standardSyncOperation);
   }
 
-  private StandardSyncOperation toStandardSyncOperation(final OperationCreate operationCreate) {
+  private static StandardSyncOperation toStandardSyncOperation(final OperationCreate operationCreate) {
     final StandardSyncOperation standardSyncOperation = new StandardSyncOperation()
         .withWorkspaceId(operationCreate.getWorkspaceId())
         .withName(operationCreate.getName())
         .withOperatorType(Enums.convertTo(operationCreate.getOperatorConfiguration().getOperatorType(), OperatorType.class))
         .withTombstone(false);
-    OperationsConverter.populateOperatorConfigFromApi(operationCreate.getOperatorConfiguration(), standardSyncOperation);
+    if (operationCreate.getOperatorConfiguration().getOperatorType() == io.airbyte.api.model.generated.OperatorType.NORMALIZATION) {
+      Preconditions.checkArgument(operationCreate.getOperatorConfiguration().getNormalization() != null);
+      standardSyncOperation.withOperatorNormalization(new OperatorNormalization()
+          .withOption(Enums.convertTo(operationCreate.getOperatorConfiguration().getNormalization().getOption(), Option.class)));
+    }
+    if (operationCreate.getOperatorConfiguration().getOperatorType() == io.airbyte.api.model.generated.OperatorType.DBT) {
+      Preconditions.checkArgument(operationCreate.getOperatorConfiguration().getDbt() != null);
+      standardSyncOperation.withOperatorDbt(new OperatorDbt()
+          .withGitRepoUrl(operationCreate.getOperatorConfiguration().getDbt().getGitRepoUrl())
+          .withGitRepoBranch(operationCreate.getOperatorConfiguration().getDbt().getGitRepoBranch())
+          .withDockerImage(operationCreate.getOperatorConfiguration().getDbt().getDockerImage())
+          .withDbtArguments(operationCreate.getOperatorConfiguration().getDbt().getDbtArguments()));
+    }
     return standardSyncOperation;
   }
 
   private void validateOperation(final OperatorConfiguration operatorConfiguration) {
-    if ((io.airbyte.api.model.generated.OperatorType.NORMALIZATION).equals(operatorConfiguration.getOperatorType())) {
+    if (operatorConfiguration.getOperatorType() == io.airbyte.api.model.generated.OperatorType.NORMALIZATION) {
       Preconditions.checkArgument(operatorConfiguration.getNormalization() != null);
     }
-    if ((io.airbyte.api.model.generated.OperatorType.DBT).equals(operatorConfiguration.getOperatorType())) {
+    if (operatorConfiguration.getOperatorType() == io.airbyte.api.model.generated.OperatorType.DBT) {
       Preconditions.checkArgument(operatorConfiguration.getDbt() != null);
-    }
-    if (io.airbyte.api.model.generated.OperatorType.WEBHOOK.equals(operatorConfiguration.getOperatorType())) {
-      Preconditions.checkArgument(operatorConfiguration.getWebhook() != null);
     }
   }
 
@@ -105,8 +113,25 @@ public class OperationsHandler {
 
   public static StandardSyncOperation updateOperation(final OperationUpdate operationUpdate, final StandardSyncOperation standardSyncOperation) {
     standardSyncOperation
-        .withName(operationUpdate.getName());
-    OperationsConverter.populateOperatorConfigFromApi(operationUpdate.getOperatorConfiguration(), standardSyncOperation);
+        .withName(operationUpdate.getName())
+        .withOperatorType(Enums.convertTo(operationUpdate.getOperatorConfiguration().getOperatorType(), OperatorType.class));
+    if (operationUpdate.getOperatorConfiguration().getOperatorType() == io.airbyte.api.model.generated.OperatorType.NORMALIZATION) {
+      Preconditions.checkArgument(operationUpdate.getOperatorConfiguration().getNormalization() != null);
+      standardSyncOperation.withOperatorNormalization(new OperatorNormalization()
+          .withOption(Enums.convertTo(operationUpdate.getOperatorConfiguration().getNormalization().getOption(), Option.class)));
+    } else {
+      standardSyncOperation.withOperatorNormalization(null);
+    }
+    if (operationUpdate.getOperatorConfiguration().getOperatorType() == io.airbyte.api.model.generated.OperatorType.DBT) {
+      Preconditions.checkArgument(operationUpdate.getOperatorConfiguration().getDbt() != null);
+      standardSyncOperation.withOperatorDbt(new OperatorDbt()
+          .withGitRepoUrl(operationUpdate.getOperatorConfiguration().getDbt().getGitRepoUrl())
+          .withGitRepoBranch(operationUpdate.getOperatorConfiguration().getDbt().getGitRepoBranch())
+          .withDockerImage(operationUpdate.getOperatorConfiguration().getDbt().getDockerImage())
+          .withDbtArguments(operationUpdate.getOperatorConfiguration().getDbt().getDbtArguments()));
+    } else {
+      standardSyncOperation.withOperatorDbt(null);
+    }
     return standardSyncOperation;
   }
 
@@ -149,7 +174,7 @@ public class OperationsHandler {
       boolean sharedOperation = false;
       for (final StandardSync sync : configRepository.listStandardSyncsUsingOperation(operationId)) {
         // Check if other connections are using the same operation
-        if (!sync.getConnectionId().equals(standardSync.getConnectionId())) {
+        if (sync.getConnectionId() != standardSync.getConnectionId()) {
           sharedOperation = true;
           break;
         }
@@ -189,7 +214,26 @@ public class OperationsHandler {
   }
 
   private static OperationRead buildOperationRead(final StandardSyncOperation standardSyncOperation) {
-    return OperationsConverter.operationReadFromPersistedOperation(standardSyncOperation);
+    final OperatorConfiguration operatorConfiguration = new OperatorConfiguration()
+        .operatorType(Enums.convertTo(standardSyncOperation.getOperatorType(), io.airbyte.api.model.generated.OperatorType.class));
+    if (standardSyncOperation.getOperatorType() == OperatorType.NORMALIZATION) {
+      Preconditions.checkArgument(standardSyncOperation.getOperatorNormalization() != null);
+      operatorConfiguration.normalization(new io.airbyte.api.model.generated.OperatorNormalization()
+          .option(Enums.convertTo(standardSyncOperation.getOperatorNormalization().getOption(), OptionEnum.class)));
+    }
+    if (standardSyncOperation.getOperatorType() == OperatorType.DBT) {
+      Preconditions.checkArgument(standardSyncOperation.getOperatorDbt() != null);
+      operatorConfiguration.dbt(new io.airbyte.api.model.generated.OperatorDbt()
+          .gitRepoUrl(standardSyncOperation.getOperatorDbt().getGitRepoUrl())
+          .gitRepoBranch(standardSyncOperation.getOperatorDbt().getGitRepoBranch())
+          .dockerImage(standardSyncOperation.getOperatorDbt().getDockerImage())
+          .dbtArguments(standardSyncOperation.getOperatorDbt().getDbtArguments()));
+    }
+    return new OperationRead()
+        .workspaceId(standardSyncOperation.getWorkspaceId())
+        .operationId(standardSyncOperation.getOperationId())
+        .name(standardSyncOperation.getName())
+        .operatorConfiguration(operatorConfiguration);
   }
 
 }

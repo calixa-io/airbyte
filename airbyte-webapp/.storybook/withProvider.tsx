@@ -7,19 +7,23 @@ import { QueryClientProvider, QueryClient } from "react-query";
 
 // TODO: theme was not working correctly so imported directly
 import { theme } from "../src/theme";
+import GlobalStyle from "../src/global-styles";
 import messages from "../src/locales/en.json";
 import { FeatureService } from "../src/hooks/services/Feature";
 import { ConfigServiceProvider, defaultConfig } from "../src/config";
 import { DocumentationPanelProvider } from "../src/views/Connector/ConnectorDocumentationLayout/DocumentationPanelContext";
 import { ServicesProvider } from "../src/core/servicesProvider";
-import { analyticsServiceContext } from "../src/hooks/services/Analytics";
-import type { AnalyticsService } from "../src/core/analytics";
+import { analyticsServiceContext, AnalyticsServiceProviderValue } from "../src/hooks/services/Analytics";
 
-const analyticsContextMock: AnalyticsService = {
+const AnalyticsContextMock: AnalyticsServiceProviderValue = {
+  analyticsContext: {},
+  setContext: () => {},
+  addContextProps: () => {},
+  removeContextProps: () => {},
+  service: {
     track: () => {},
-    setContext: () => {},
-    removeFromContext: () => {},
-} as unknown as AnalyticsService;
+  },
+} as unknown as AnalyticsServiceProviderValue;
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -32,7 +36,7 @@ const queryClient = new QueryClient({
 
 export const withProviders = (getStory) => (
   <React.Suspense fallback={null}>
-    <analyticsServiceContext.Provider value={analyticsContextMock}>
+    <analyticsServiceContext.Provider value={AnalyticsContextMock}>
       <QueryClientProvider client={queryClient}>
         <ServicesProvider>
           <MemoryRouter>
@@ -41,6 +45,7 @@ export const withProviders = (getStory) => (
                 <ConfigServiceProvider defaultConfig={defaultConfig} providers={[]}>
                   <DocumentationPanelProvider>
                     <FeatureService features={[]}>
+                      <GlobalStyle />
                       {getStory()}
                     </FeatureService>
                   </DocumentationPanelProvider>

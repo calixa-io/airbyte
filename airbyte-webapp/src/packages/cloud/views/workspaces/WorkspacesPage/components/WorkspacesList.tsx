@@ -2,10 +2,10 @@ import React from "react";
 import styled from "styled-components";
 
 import {
-  useCreateCloudWorkspace,
+  useCreateWorkspace,
   useListCloudWorkspaces,
-} from "packages/cloud/services/workspaces/CloudWorkspacesService";
-import { useWorkspaceService } from "services/workspaces/WorkspacesService";
+  useWorkspaceService,
+} from "packages/cloud/services/workspaces/WorkspacesService";
 
 import WorkspaceItem from "./WorkspaceItem";
 import WorkspacesControl from "./WorkspacesControl";
@@ -20,7 +20,7 @@ const Content = styled.div`
 const WorkspacesList: React.FC = () => {
   const workspaces = useListCloudWorkspaces();
   const { selectWorkspace } = useWorkspaceService();
-  const { mutateAsync: createCloudWorkspace } = useCreateCloudWorkspace();
+  const createWorkspace = useCreateWorkspace();
 
   return (
     <Content>
@@ -29,7 +29,7 @@ const WorkspacesList: React.FC = () => {
           {workspace.name}
         </WorkspaceItem>
       ))}
-      <WorkspacesControl onSubmit={createCloudWorkspace} />
+      <WorkspacesControl onSubmit={createWorkspace} />
     </Content>
   );
 };

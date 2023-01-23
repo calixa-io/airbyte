@@ -219,10 +219,24 @@
             "type": ["null", "integer"]
           },
           "shopify_product_id": {
-            "type": ["null", "string"]
+            "oneOf": [
+              {
+                "type": ["null", "number"]
+              },
+              {
+                "type": ["null", "string"]
+              }
+            ]
           },
           "shopify_variant_id": {
-            "type": ["null", "string"]
+            "oneOf": [
+              {
+                "type": ["null", "number"]
+              },
+              {
+                "type": ["null", "string"]
+              }
+            ]
           },
           "sku": {
             "type": ["null", "string"]
@@ -367,7 +381,14 @@
       "type": ["null", "string"]
     },
     "total_tax": {
-      "type": ["null", "string"]
+      "oneOf": [
+        {
+          "type": ["null", "number"]
+        },
+        {
+          "type": ["null", "string"]
+        }
+      ]
     },
     "total_weight": {
       "type": ["null", "integer"]

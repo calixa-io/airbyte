@@ -31,7 +31,6 @@ import org.jooq.impl.SQLDataType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class V0_35_1_001__RemoveForeignKeyFromActorOauth extends BaseJavaMigration {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(V0_35_1_001__RemoveForeignKeyFromActorOauth.class);
@@ -48,7 +47,7 @@ public class V0_35_1_001__RemoveForeignKeyFromActorOauth extends BaseJavaMigrati
   }
 
   @VisibleForTesting
-  public static void migrate(final DSLContext ctx) {
+  public static void migrate(DSLContext ctx) {
     dropForeignKeyConstraintFromActorOauthTable(ctx);
     populateActorOauthParameter(ctx);
   }
@@ -137,7 +136,7 @@ public class V0_35_1_001__RemoveForeignKeyFromActorOauth extends BaseJavaMigrati
     LOGGER.info("actor_oauth_parameter table populated with " + destinationOauthParamRecords + " destination oauth params records");
   }
 
-  static boolean actorOAuthParamExists(final UUID oauthParamId, final DSLContext ctx) {
+  static boolean actorOAuthParamExists(UUID oauthParamId, DSLContext ctx) {
     final Field<UUID> id = DSL.field("id", SQLDataType.UUID.nullable(false));
     return ctx.fetchExists(select()
         .from(table("actor_oauth_parameter"))

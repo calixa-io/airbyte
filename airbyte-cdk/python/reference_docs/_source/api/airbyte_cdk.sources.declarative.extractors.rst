@@ -2,14 +2,6 @@
 Submodules
 ----------
 
-airbyte\_cdk.sources.declarative.extractors.dpath\_extractor module
--------------------------------------------------------------------
-
-.. automodule:: airbyte_cdk.sources.declarative.extractors.dpath_extractor
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 airbyte\_cdk.sources.declarative.extractors.http\_selector module
 -----------------------------------------------------------------
 
@@ -18,10 +10,10 @@ airbyte\_cdk.sources.declarative.extractors.http\_selector module
    :undoc-members:
    :show-inheritance:
 
-airbyte\_cdk.sources.declarative.extractors.record\_extractor module
---------------------------------------------------------------------
+airbyte\_cdk.sources.declarative.extractors.jello module
+--------------------------------------------------------
 
-.. automodule:: airbyte_cdk.sources.declarative.extractors.record_extractor
+.. automodule:: airbyte_cdk.sources.declarative.extractors.jello
    :members:
    :undoc-members:
    :show-inheritance:

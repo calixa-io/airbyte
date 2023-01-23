@@ -1,43 +1,39 @@
 import React from "react";
-import { FormattedMessage, useIntl } from "react-intl";
+import { FormattedMessage } from "react-intl";
 import { useAsyncFn } from "react-use";
 import styled from "styled-components";
 
-import { Button } from "components/ui/Button";
-import { ToastType } from "components/ui/Toast";
+import { LoadingButton } from "components";
 
-import { LogType } from "core/domain/logs/types";
-import { useNotificationService } from "hooks/services/Notification";
 import { useGetLogs } from "services/logs/LogsService";
-import { downloadFile } from "utils/file";
 
-import styles from "./LogsContainer.module.scss";
+import { LogType } from "../../../../../core/domain/logs/types";
 
 const Content = styled.div`
   padding: 29px 0 27px;
   text-align: center;
 `;
 
-const LogsContent: React.FC = () => {
-  const { registerNotification } = useNotificationService();
-  const { formatMessage } = useIntl();
+const LogsButton = styled(LoadingButton)`
+  margin: 0 15px;
+`;
 
+const downloadFile = (file: Blob, name: string) => {
+  const element = document.createElement("a");
+  element.href = URL.createObjectURL(file);
+  element.download = name;
+  document.body.appendChild(element); // Required for this to work in FireFox
+  element.click();
+  document.body.removeChild(element);
+};
+
+const LogsContent: React.FC = () => {
   const fetchLogs = useGetLogs();
 
   const downloadLogs = async (logType: LogType) => {
-    try {
-      const file = await fetchLogs({ logType });
-      const name = `${logType}-logs.txt`;
-      downloadFile(file, name);
-    } catch (e) {
-      console.error(e);
-
-      registerNotification({
-        id: "admin.logs.error",
-        text: formatMessage({ id: "admin.logs.error" }),
-        type: ToastType.ERROR,
-      });
-    }
+    const file = await fetchLogs({ logType });
+    const name = `${logType}-logs.txt`;
+    downloadFile(file, name);
   };
 
   // TODO: get rid of useAsyncFn and use react-query
@@ -53,12 +49,12 @@ const LogsContent: React.FC = () => {
 
   return (
     <Content>
-      <Button className={styles.logsButton} onClick={downloadServerLogs} isLoading={serverLogsLoading}>
+      <LogsButton onClick={downloadServerLogs} isLoading={serverLogsLoading}>
         <FormattedMessage id="admin.downloadServerLogs" />
-      </Button>
-      <Button className={styles.logsButton} onClick={downloadSchedulerLogs} isLoading={schedulerLogsLoading}>
+      </LogsButton>
+      <LogsButton onClick={downloadSchedulerLogs} isLoading={schedulerLogsLoading}>
         <FormattedMessage id="admin.downloadSchedulerLogs" />
-      </Button>
+      </LogsButton>
     </Content>
   );
 };

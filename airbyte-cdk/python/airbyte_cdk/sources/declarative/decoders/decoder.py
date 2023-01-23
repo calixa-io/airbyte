@@ -2,16 +2,15 @@
 # Copyright (c) 2022 Airbyte, Inc., all rights reserved.
 #
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, List, Mapping, Union
 
 import requests
-from dataclasses_jsonschema import JsonSchemaMixin
 
 
 @dataclass
-class Decoder(JsonSchemaMixin):
+class Decoder(ABC):
     """
     Decoder strategy to transform a requests.Response into a Mapping[str, Any]
     """

@@ -18,7 +18,11 @@ kind: Ingress
 metadata:
   name: {{ $fullName }}
   labels:
-    {{- include "airbyte.labels" . | nindent 4 }}
+    app.kubernetes.io/name: {{ include "airbyte.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    helm.sh/chart: {{ include "airbyte.chart" . }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
   {{- with .Values.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -50,11 +54,11 @@ spec:
             backend:
               {{- if semverCompare ">=1.19-0" $.Capabilities.KubeVersion.GitVersion }}
               service:
-                name: {{ $.Release.Name }}-airbyte-webapp-svc
+                name: {{ $fullName }}-webapp
                 port:
                   number: {{ $svcPort }}
               {{- else }}
-              serviceName: {{ $fullName }}-svc
+              serviceName: {{ $fullName }}-webapp
               servicePort: {{ $svcPort }}
               {{- end }}
           {{- end }}

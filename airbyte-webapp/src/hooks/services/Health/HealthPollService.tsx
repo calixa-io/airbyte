@@ -6,9 +6,6 @@ import { HealthService } from "core/health/HealthService";
 import { useGetService } from "core/servicesProvider";
 import { useNotificationService } from "hooks/services/Notification/NotificationService";
 
-import { ToastType } from "../../../components/ui/Toast";
-import { Notification } from "../Notification";
-
 const HEALTH_NOTIFICATION_ID = "health.error";
 const HEALTHCHECK_MAX_COUNT = 3;
 
@@ -20,10 +17,10 @@ function useApiHealthPoll(): void {
   const { registerNotification, unregisterNotificationById } = useNotificationService();
 
   useEffect(() => {
-    const errorNotification: Notification = {
+    const errorNotification = {
       id: HEALTH_NOTIFICATION_ID,
-      text: formatMessage({ id: "notifications.error.health" }),
-      type: ToastType.ERROR,
+      title: formatMessage({ id: "notifications.error.health" }),
+      isError: true,
     };
 
     const interval = setInterval(async () => {

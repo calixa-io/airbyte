@@ -17,14 +17,11 @@ import javax.sql.DataSource;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.MySQLContainer;
 
 /**
  * Test suite for the {@link DataSourceFactory} class.
  */
 class DataSourceFactoryTest extends CommonFactoryTest {
-
-  private static final String CONNECT_TIMEOUT = "connectTimeout";
 
   static String database;
   static String driverClassName;
@@ -48,7 +45,7 @@ class DataSourceFactoryTest extends CommonFactoryTest {
   @Test
   void testCreatingDataSourceWithConnectionTimeoutSetAboveDefault() {
     final Map<String, String> connectionProperties = Map.of(
-        CONNECT_TIMEOUT, "61");
+        "connectTimeout", "61");
     final DataSource dataSource = DataSourceFactory.create(
         username,
         password,
@@ -61,9 +58,9 @@ class DataSourceFactoryTest extends CommonFactoryTest {
   }
 
   @Test
-  void testCreatingPostgresDataSourceWithConnectionTimeoutSetBelowDefault() {
+  void testCreatingDataSourceWithConnectionTimeoutSetBelowDefault() {
     final Map<String, String> connectionProperties = Map.of(
-        CONNECT_TIMEOUT, "30");
+        "connectTimeout", "30");
     final DataSource dataSource = DataSourceFactory.create(
         username,
         password,
@@ -72,31 +69,13 @@ class DataSourceFactoryTest extends CommonFactoryTest {
         connectionProperties);
     assertNotNull(dataSource);
     assertEquals(HikariDataSource.class, dataSource.getClass());
-    assertEquals(30000, ((HikariDataSource) dataSource).getHikariConfigMXBean().getConnectionTimeout());
-  }
-
-  @Test
-  void testCreatingMySQLDataSourceWithConnectionTimeoutSetBelowDefault() {
-    try (MySQLContainer<?> mySQLContainer = new MySQLContainer<>("mysql:8.0")) {
-      mySQLContainer.start();
-      final Map<String, String> connectionProperties = Map.of(
-          CONNECT_TIMEOUT, "30");
-      final DataSource dataSource = DataSourceFactory.create(
-          mySQLContainer.getUsername(),
-          mySQLContainer.getPassword(),
-          mySQLContainer.getDriverClassName(),
-          mySQLContainer.getJdbcUrl(),
-          connectionProperties);
-      assertNotNull(dataSource);
-      assertEquals(HikariDataSource.class, dataSource.getClass());
-      assertEquals(60000, ((HikariDataSource) dataSource).getHikariConfigMXBean().getConnectionTimeout());
-    }
+    assertEquals(60000, ((HikariDataSource) dataSource).getHikariConfigMXBean().getConnectionTimeout());
   }
 
   @Test
   void testCreatingDataSourceWithConnectionTimeoutSetWithZero() {
     final Map<String, String> connectionProperties = Map.of(
-        CONNECT_TIMEOUT, "0");
+        "connectTimeout", "0");
     final DataSource dataSource = DataSourceFactory.create(
         username,
         password,
@@ -109,7 +88,7 @@ class DataSourceFactoryTest extends CommonFactoryTest {
   }
 
   @Test
-  void testCreatingPostgresDataSourceWithConnectionTimeoutNotSet() {
+  void testCreatingDataSourceWithConnectionTimeoutNotSet() {
     final Map<String, String> connectionProperties = Map.of();
     final DataSource dataSource = DataSourceFactory.create(
         username,
@@ -119,25 +98,7 @@ class DataSourceFactoryTest extends CommonFactoryTest {
         connectionProperties);
     assertNotNull(dataSource);
     assertEquals(HikariDataSource.class, dataSource.getClass());
-    assertEquals(10000, ((HikariDataSource) dataSource).getHikariConfigMXBean().getConnectionTimeout());
-  }
-
-  @Test
-  void testCreatingMySQLDataSourceWithConnectionTimeoutNotSet() {
-    try (MySQLContainer<?> mySQLContainer = new MySQLContainer<>("mysql:8.0")) {
-      mySQLContainer.start();
-      final Map<String, String> connectionProperties = Map.of();
-      final DataSource dataSource = DataSourceFactory.create(
-          mySQLContainer.getUsername(),
-          mySQLContainer.getPassword(),
-          mySQLContainer.getDriverClassName(),
-          mySQLContainer.getJdbcUrl(),
-          connectionProperties);
-      assertNotNull(dataSource);
-      assertEquals(HikariDataSource.class, dataSource.getClass());
-      assertEquals(60000, ((HikariDataSource) dataSource).getHikariConfigMXBean().getConnectionTimeout());
-    }
-
+    assertEquals(60000, ((HikariDataSource) dataSource).getHikariConfigMXBean().getConnectionTimeout());
   }
 
   @Test

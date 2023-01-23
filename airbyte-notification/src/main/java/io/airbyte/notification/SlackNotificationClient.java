@@ -4,7 +4,6 @@
 
 package io.airbyte.notification;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import io.airbyte.commons.json.Jsons;
@@ -34,44 +33,36 @@ public class SlackNotificationClient extends NotificationClient {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SlackNotificationClient.class);
 
+  private final HttpClient httpClient = HttpClient.newBuilder()
+      .version(HttpClient.Version.HTTP_2)
+      .build();
   private final SlackNotificationConfiguration config;
 
-  @JsonCreator
   public SlackNotificationClient(final Notification notification) {
     super(notification);
     this.config = notification.getSlackConfiguration();
   }
 
   @Override
-  public boolean notifyJobFailure(final String sourceConnector,
-                                  final String destinationConnector,
-                                  final String jobDescription,
-                                  final String logUrl,
-                                  final Long jobId)
+  public boolean notifyJobFailure(final String sourceConnector, final String destinationConnector, final String jobDescription, final String logUrl)
       throws IOException, InterruptedException {
     return notifyFailure(renderTemplate(
         "slack/failure_slack_notification_template.txt",
         sourceConnector,
         destinationConnector,
         jobDescription,
-        logUrl,
-        String.valueOf(jobId)));
+        logUrl));
   }
 
   @Override
-  public boolean notifyJobSuccess(final String sourceConnector,
-                                  final String destinationConnector,
-                                  final String jobDescription,
-                                  final String logUrl,
-                                  final Long jobId)
+  public boolean notifyJobSuccess(final String sourceConnector, final String destinationConnector, final String jobDescription, final String logUrl)
       throws IOException, InterruptedException {
     return notifySuccess(renderTemplate(
         "slack/success_slack_notification_template.txt",
         sourceConnector,
         destinationConnector,
         jobDescription,
-        logUrl,
-        String.valueOf(jobId)));
+        logUrl));
   }
 
   @Override
@@ -120,22 +111,7 @@ public class SlackNotificationClient extends NotificationClient {
     return false;
   }
 
-  @Override
-  public boolean notifySchemaChange(UUID connectionId, boolean isBreaking) throws IOException, InterruptedException {
-    final String message = renderTemplate(
-        isBreaking ? "slack/breaking_schema_change_notification_template.txt" : "slack/non_breaking_schema_change_notification_template.txt",
-        connectionId.toString());
-    final String webhookUrl = config.getWebhook();
-    if (!Strings.isEmpty(webhookUrl)) {
-      return notify(message);
-    }
-    return false;
-  }
-
   private boolean notify(final String message) throws IOException, InterruptedException {
-    final HttpClient httpClient = HttpClient.newBuilder()
-        .version(HttpClient.Version.HTTP_2)
-        .build();
     final ImmutableMap<String, String> body = new Builder<String, String>()
         .put("text", message)
         .build();

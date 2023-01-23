@@ -1,12 +1,9 @@
 import React, { useMemo } from "react";
 import { FormattedMessage } from "react-intl";
 
-import { FeatureItem, useFeature } from "hooks/services/Feature";
 // import useConnector from "hooks/services/useConnector";
-import { DbtCloudSettingsView } from "packages/cloud/views/settings/integrations/DbtCloudSettingsView";
 import { AccountSettingsView } from "packages/cloud/views/users/AccountSettingsView";
 import { UsersSettingsView } from "packages/cloud/views/users/UsersSettingsView";
-import { DataResidencyView } from "packages/cloud/views/workspaces/DataResidencyView";
 import { WorkspaceSettingsView } from "packages/cloud/views/workspaces/WorkspaceSettingsView";
 import SettingsPage from "pages/SettingsPage";
 import {
@@ -15,16 +12,22 @@ import {
 } from "pages/SettingsPage/pages/ConnectorsPage";
 // import ConfigurationsPage from "pages/SettingsPage/pages/ConfigurationsPage";
 import NotificationPage from "pages/SettingsPage/pages/NotificationPage";
-import { PageConfig } from "pages/SettingsPage/SettingsPage";
-import { isOsanoActive, showOsanoDrawer } from "utils/dataPrivacy";
+import { PageConfig, SettingsRoute } from "pages/SettingsPage/SettingsPage";
 
-import { CloudSettingsRoutes } from "./routePaths";
+const CloudSettingsRoutes = {
+  Configuration: SettingsRoute.Configuration,
+  Notifications: SettingsRoute.Notifications,
+  Account: SettingsRoute.Account,
+  Source: SettingsRoute.Source,
+  Destination: SettingsRoute.Destination,
+
+  Workspace: "workspaces",
+  AccessManagement: "access-management",
+} as const;
 
 export const CloudSettingsPage: React.FC = () => {
   // TODO: uncomment when supported in cloud
   // const { countNewSourceVersion, countNewDestinationVersion } = useConnector();
-  const supportsCloudDbtIntegration = useFeature(FeatureItem.AllowDBTCloudIntegration);
-  const supportsDataResidency = useFeature(FeatureItem.AllowChangeDataGeographies);
 
   const pageConfig = useMemo<PageConfig>(
     () => ({
@@ -37,15 +40,6 @@ export const CloudSettingsPage: React.FC = () => {
               name: <FormattedMessage id="settings.account" />,
               component: AccountSettingsView,
             },
-            ...(isOsanoActive()
-              ? [
-                  {
-                    name: <FormattedMessage id="settings.cookiePreferences" />,
-                    path: "__COOKIE_PREFERENCES__", // Special path with no meaning, since the onClick will be triggered
-                    onClick: () => showOsanoDrawer(),
-                  },
-                ]
-              : []),
           ],
         },
         {
@@ -57,15 +51,6 @@ export const CloudSettingsPage: React.FC = () => {
               component: WorkspaceSettingsView,
               id: "workspaceSettings.generalSettings",
             },
-            ...(supportsDataResidency
-              ? [
-                  {
-                    path: CloudSettingsRoutes.DataResidency,
-                    name: <FormattedMessage id="settings.dataResidency" />,
-                    component: DataResidencyView,
-                  },
-                ]
-              : []),
             {
               path: CloudSettingsRoutes.Source,
               name: <FormattedMessage id="tables.sources" />,
@@ -96,27 +81,10 @@ export const CloudSettingsPage: React.FC = () => {
             },
           ],
         },
-        ...(supportsCloudDbtIntegration
-          ? [
-              {
-                category: <FormattedMessage id="settings.integrationSettings" />,
-                routes: [
-                  {
-                    path: CloudSettingsRoutes.DbtCloud,
-                    name: <FormattedMessage id="settings.integrationSettings.dbtCloudSettings" />,
-                    component: DbtCloudSettingsView,
-                    id: "integrationSettings.dbtCloudSettings",
-                  },
-                ],
-              },
-            ]
-          : []),
       ],
     }),
-    [supportsCloudDbtIntegration, supportsDataResidency]
+    []
   );
 
   return <SettingsPage pageConfig={pageConfig} />;
 };
-
-export default CloudSettingsPage;

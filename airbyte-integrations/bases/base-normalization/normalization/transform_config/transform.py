@@ -58,7 +58,6 @@ class TransformConfig:
             DestinationType.ORACLE.value: self.transform_oracle,
             DestinationType.MSSQL.value: self.transform_mssql,
             DestinationType.CLICKHOUSE.value: self.transform_clickhouse,
-            DestinationType.TIDB.value: self.transform_tidb,
         }[integration_type.value](config)
 
         # merge pre-populated base_profile with destination-specific configuration.
@@ -178,7 +177,7 @@ class TransformConfig:
 
         ssl = config.get("ssl")
         if ssl:
-            ssl_mode = config.get("ssl_mode", {"mode": "allow"})
+            ssl_mode = config.get("ssl_mode", "allow")
             dbt_config["sslmode"] = ssl_mode.get("mode")
             if ssl_mode["mode"] == "verify-ca":
                 TransformConfig.create_file("ca.crt", ssl_mode["ca_certificate"])
@@ -318,8 +317,6 @@ class TransformConfig:
         # https://docs.getdbt.com/reference/warehouse-profiles/clickhouse-profile
         dbt_config = {
             "type": "clickhouse",
-            "driver": "http",
-            "verify": False,
             "host": config["host"],
             "port": config["port"],
             "schema": config["database"],
@@ -328,21 +325,8 @@ class TransformConfig:
         }
         if "password" in config:
             dbt_config["password"] = config["password"]
-        return dbt_config
-
-    @staticmethod
-    def transform_tidb(config: Dict[str, Any]):
-        print("transform_tidb")
-        # https://github.com/pingcap/dbt-tidb#profile-configuration
-        dbt_config = {
-            "type": "tidb",
-            "server": config["host"],
-            "port": config["port"],
-            "schema": config["database"],
-            "database": config["database"],
-            "username": config["username"],
-            "password": config.get("password", ""),
-        }
+        if "tcp-port" in config:
+            dbt_config["port"] = config["tcp-port"]
         return dbt_config
 
     @staticmethod

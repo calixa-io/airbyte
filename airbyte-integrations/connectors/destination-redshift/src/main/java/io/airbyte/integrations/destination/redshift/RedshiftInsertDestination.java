@@ -6,7 +6,6 @@ package io.airbyte.integrations.destination.redshift;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
 import io.airbyte.commons.json.Jsons;
 import io.airbyte.db.factory.DataSourceFactory;
 import io.airbyte.db.factory.DatabaseDriver;
@@ -58,20 +57,15 @@ public class RedshiftInsertDestination extends AbstractJdbcDestination {
 
   public static JsonNode getJdbcConfig(final JsonNode redshiftConfig) {
     final String schema = Optional.ofNullable(redshiftConfig.get(JdbcUtils.SCHEMA_KEY)).map(JsonNode::asText).orElse("public");
-    Builder<Object, Object> configBuilder = ImmutableMap.builder()
+    return Jsons.jsonNode(ImmutableMap.builder()
         .put(JdbcUtils.USERNAME_KEY, redshiftConfig.get(JdbcUtils.USERNAME_KEY).asText())
         .put(JdbcUtils.PASSWORD_KEY, redshiftConfig.get(JdbcUtils.PASSWORD_KEY).asText())
         .put(JdbcUtils.JDBC_URL_KEY, String.format("jdbc:redshift://%s:%s/%s",
             redshiftConfig.get(JdbcUtils.HOST_KEY).asText(),
             redshiftConfig.get(JdbcUtils.PORT_KEY).asText(),
             redshiftConfig.get(JdbcUtils.DATABASE_KEY).asText()))
-        .put(JdbcUtils.SCHEMA_KEY, schema);
-
-    if (redshiftConfig.has(JdbcUtils.JDBC_URL_PARAMS_KEY)) {
-      configBuilder.put(JdbcUtils.JDBC_URL_PARAMS_KEY, redshiftConfig.get(JdbcUtils.JDBC_URL_PARAMS_KEY));
-    }
-
-    return Jsons.jsonNode(configBuilder.build());
+        .put(JdbcUtils.SCHEMA_KEY, schema)
+        .build());
   }
 
 }

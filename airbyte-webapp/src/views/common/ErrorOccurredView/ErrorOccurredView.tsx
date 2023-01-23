@@ -1,44 +1,27 @@
 import React from "react";
 import { FormattedMessage } from "react-intl";
 
-import { Button } from "components/ui/Button";
-import { Heading } from "components/ui/Heading";
+import { Button, H2 } from "components";
 
 import styles from "./ErrorOccurredView.module.scss";
 
 interface ErrorOccurredViewProps {
   message: React.ReactNode;
-  /**
-   * URL to relevant documentation for the error if available
-   */
-  docLink?: string;
   ctaButtonText?: React.ReactNode;
   onCtaButtonClick?: React.MouseEventHandler;
 }
 
-export const ErrorOccurredView: React.FC<ErrorOccurredViewProps> = ({
-  message,
-  onCtaButtonClick,
-  ctaButtonText,
-  docLink,
-}) => {
+export const ErrorOccurredView: React.FC<ErrorOccurredViewProps> = ({ message, onCtaButtonClick, ctaButtonText }) => {
   return (
-    <div className={styles.errorOccurredView} data-testid="errorView">
+    <div className={styles.errorOccurredView}>
       <div className={styles.content}>
         <img src="/images/octavia/biting-nails.png" alt="" className={styles.octavia} />
-        <Heading as="h2" size="lg" centered>
+        <H2 center>
           <FormattedMessage id="errorView.title" />
-        </Heading>
+        </H2>
         <p className={styles.message}>{message}</p>
-        {docLink && (
-          <p>
-            <a href={docLink} target="_blank" rel="noreferrer">
-              <FormattedMessage id="errorView.docLink" />
-            </a>
-          </p>
-        )}
         {onCtaButtonClick && ctaButtonText && (
-          <Button size="lg" onClick={onCtaButtonClick}>
+          <Button size="xl" onClick={onCtaButtonClick}>
             {ctaButtonText}
           </Button>
         )}

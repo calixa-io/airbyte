@@ -1,14 +1,9 @@
-import classNames from "classnames";
-import { PropsWithChildren } from "react";
+import styled from "styled-components";
 
-import styles from "./FormPageContent.module.scss";
-
-interface FormPageContentProps {
-  big?: boolean;
-}
-
-const FormPageContent: React.FC<PropsWithChildren<FormPageContentProps>> = ({ big, children }) => (
-  <div className={classNames(styles.container, { [styles.big]: big })}>{children}</div>
-);
+const FormPageContent = styled.div<{ big?: boolean }>`
+  width: 80%;
+  max-width: ${({ big }) => (big ? 1279 : 813)}px;
+  margin: 13px auto;
+`;
 
 export default FormPageContent;

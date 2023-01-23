@@ -1,4 +1,4 @@
-import { ConnectionScheduleData, ConnectionScheduleType, SchemaChange } from "../../core/request/AirbyteClient";
+import { ConnectionSchedule } from "../../core/request/AirbyteClient";
 
 interface EntityTableDataItem {
   entityId: string;
@@ -24,19 +24,16 @@ interface ITableDataItem {
   isSyncing?: boolean;
   status?: string;
   lastSync?: number | null;
-  scheduleData?: ConnectionScheduleData;
-  scheduleType?: ConnectionScheduleType;
-  schemaChange: SchemaChange;
+  schedule?: ConnectionSchedule;
   lastSyncStatus: string | null;
   connectorIcon?: string;
   entityIcon?: string;
 }
 
-const enum Status {
+enum Status {
   ACTIVE = "active",
   INACTIVE = "inactive",
   FAILED = "failed",
-  CANCELLED = "cancelled",
   EMPTY = "empty",
   PENDING = "pending",
 }

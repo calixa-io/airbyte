@@ -5,7 +5,6 @@
 package io.airbyte.db.instance.configs;
 
 import io.airbyte.db.factory.FlywayFactory;
-import io.airbyte.db.instance.DatabaseConstants;
 import io.airbyte.db.instance.DatabaseMigrator;
 import io.airbyte.db.instance.development.MigrationDevHelper;
 import java.io.IOException;
@@ -15,6 +14,8 @@ import org.junit.jupiter.api.Test;
 @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
 class ConfigsDatabaseMigratorTest extends AbstractConfigsDatabaseTest {
 
+  private static final String SCHEMA_DUMP_FILE = "src/main/resources/configs_database/schema_dump.txt";
+
   @Test
   void dumpSchema() throws IOException {
     final Flyway flyway = FlywayFactory.create(getDataSource(), getClass().getSimpleName(), ConfigsDatabaseMigrator.DB_IDENTIFIER,
@@ -22,7 +23,7 @@ class ConfigsDatabaseMigratorTest extends AbstractConfigsDatabaseTest {
     final DatabaseMigrator migrator = new ConfigsDatabaseMigrator(database, flyway);
     migrator.migrate();
     final String schema = migrator.dumpSchema();
-    MigrationDevHelper.dumpSchema(schema, DatabaseConstants.CONFIGS_SCHEMA_DUMP_PATH, false);
+    MigrationDevHelper.dumpSchema(schema, SCHEMA_DUMP_FILE, false);
   }
 
 }

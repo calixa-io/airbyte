@@ -1,15 +1,9 @@
 import React from "react";
 import { FormattedMessage } from "react-intl";
 
-import { HeadTitle } from "components/common/HeadTitle";
-import { Heading } from "components/ui/Heading";
+import HeadTitle from "components/HeadTitle";
 
-import { PageTrackingCodes, useTrackPage } from "hooks/services/Analytics";
-import { useExperiment } from "hooks/services/Experiment";
-
-import { OAuthLogin } from "../OAuthLogin";
-import { Separator } from "./components/Separator";
-import { Disclaimer, SignupForm } from "./components/SignupForm";
+import { SignupForm } from "./components/SignupForm";
 import SpecialBlock from "./components/SpecialBlock";
 import styles from "./SignupPage.module.scss";
 
@@ -18,13 +12,10 @@ interface SignupPageProps {
 }
 
 const SignupPage: React.FC<SignupPageProps> = ({ highlightStyle }) => {
-  useTrackPage(PageTrackingCodes.SIGNUP);
-  const oAuthPosition = useExperiment("authPage.oauth.position", "bottom");
-
   return (
-    <div className={styles.container}>
+    <div>
       <HeadTitle titles={[{ id: "login.signup" }]} />
-      <Heading as="h1" size="xl" className={styles.title}>
+      <h1 className={styles.title}>
         <FormattedMessage
           id="login.activateAccess"
           values={{
@@ -35,22 +26,9 @@ const SignupPage: React.FC<SignupPageProps> = ({ highlightStyle }) => {
             ),
           }}
         />
-      </Heading>
+      </h1>
       <SpecialBlock />
-      {oAuthPosition === "top" && (
-        <>
-          <OAuthLogin isSignUpPage />
-          <Separator />
-        </>
-      )}
       <SignupForm />
-      {oAuthPosition === "bottom" && (
-        <>
-          <Separator />
-          <OAuthLogin isSignUpPage />
-        </>
-      )}
-      <Disclaimer />
     </div>
   );
 };

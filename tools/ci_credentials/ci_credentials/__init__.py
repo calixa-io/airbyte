@@ -1,6 +1,6 @@
-#
-# Copyright (c) 2022 Airbyte, Inc., all rights reserved.
-#
-from .secrets_manager import SecretsManager
+# from .main import main
+from .secrets_loader import SecretsLoader
 
-__all__ = ("SecretsManager",)
+__all__ = (
+    "SecretsLoader",
+)

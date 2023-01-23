@@ -2,19 +2,24 @@ import { Form, Formik, FormikConfig, FormikHelpers } from "formik";
 import React from "react";
 import { useIntl } from "react-intl";
 import { useMutation } from "react-query";
+import styled from "styled-components";
 
-import { FormChangeTracker } from "components/common/FormChangeTracker";
+import { FormChangeTracker } from "components/FormChangeTracker";
 
-import { useConnectionFormService } from "hooks/services/ConnectionForm/ConnectionFormService";
-import { generateMessageFromError } from "utils/errorStatusMessage";
+import { createFormErrorMessage } from "utils/errorStatusMessage";
 import { CollapsibleCardProps, CollapsibleCard } from "views/Connection/CollapsibleCard";
 import EditControls from "views/Connection/ConnectionForm/components/EditControls";
 
-import styles from "./FormCard.module.scss";
+import { ConnectionFormMode } from "./ConnectionForm/ConnectionForm";
+
+const FormContainer = styled(Form)`
+  padding: 22px 27px 15px 24px;
+`;
 
 interface FormCardProps<T> extends CollapsibleCardProps {
   bottomSeparator?: boolean;
   form: FormikConfig<T>;
+  mode?: ConnectionFormMode;
   submitDisabled?: boolean;
 }
 
@@ -22,11 +27,11 @@ export const FormCard = <T extends object>({
   children,
   form,
   bottomSeparator = true,
+  mode,
   submitDisabled,
   ...props
 }: React.PropsWithChildren<FormCardProps<T>>) => {
   const { formatMessage } = useIntl();
-  const { mode } = useConnectionFormService();
 
   const { mutateAsync, error, reset, isSuccess } = useMutation<
     void,
@@ -36,13 +41,13 @@ export const FormCard = <T extends object>({
     form.onSubmit(values, formikHelpers);
   });
 
-  const errorMessage = error ? generateMessageFromError(error) : null;
+  const errorMessage = error ? createFormErrorMessage(error) : null;
 
   return (
     <Formik {...form} onSubmit={(values, formikHelpers) => mutateAsync({ values, formikHelpers })}>
       {({ resetForm, isSubmitting, dirty, isValid }) => (
         <CollapsibleCard {...props}>
-          <Form className={styles.formCard}>
+          <FormContainer>
             <FormChangeTracker changed={dirty} />
             {children}
             <div>
@@ -63,7 +68,7 @@ export const FormCard = <T extends object>({
                 />
               )}
             </div>
-          </Form>
+          </FormContainer>
         </CollapsibleCard>
       )}
     </Formik>

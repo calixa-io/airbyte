@@ -4,18 +4,8 @@
 
 package io.airbyte.workers.temporal.sync;
 
-import static io.airbyte.metrics.lib.ApmTraceConstants.ACTIVITY_TRACE_OPERATION_NAME;
-import static io.airbyte.metrics.lib.ApmTraceConstants.Tags.ATTEMPT_NUMBER_KEY;
-import static io.airbyte.metrics.lib.ApmTraceConstants.Tags.DESTINATION_DOCKER_IMAGE_KEY;
-import static io.airbyte.metrics.lib.ApmTraceConstants.Tags.JOB_ID_KEY;
-
-import datadog.trace.api.Trace;
-import io.airbyte.api.client.AirbyteApiClient;
-import io.airbyte.api.client.model.generated.JobIdRequestBody;
 import io.airbyte.commons.functional.CheckedSupplier;
 import io.airbyte.commons.json.Jsons;
-import io.airbyte.commons.temporal.CancellationHandler;
-import io.airbyte.commons.temporal.TemporalUtils;
 import io.airbyte.config.AirbyteConfigValidator;
 import io.airbyte.config.ConfigSchema;
 import io.airbyte.config.Configs.WorkerEnvironment;
@@ -23,88 +13,74 @@ import io.airbyte.config.OperatorDbtInput;
 import io.airbyte.config.ResourceRequirements;
 import io.airbyte.config.helpers.LogConfigs;
 import io.airbyte.config.persistence.split_secrets.SecretsHydrator;
-import io.airbyte.metrics.lib.ApmTraceUtils;
-import io.airbyte.persistence.job.models.IntegrationLauncherConfig;
-import io.airbyte.persistence.job.models.JobRunConfig;
-import io.airbyte.workers.ContainerOrchestratorConfig;
+import io.airbyte.scheduler.models.IntegrationLauncherConfig;
+import io.airbyte.scheduler.models.JobRunConfig;
+import io.airbyte.scheduler.persistence.JobPersistence;
 import io.airbyte.workers.Worker;
+import io.airbyte.workers.WorkerApp;
 import io.airbyte.workers.WorkerConfigs;
 import io.airbyte.workers.general.DbtTransformationRunner;
 import io.airbyte.workers.general.DbtTransformationWorker;
-import io.airbyte.workers.normalization.DefaultNormalizationRunner;
+import io.airbyte.workers.normalization.NormalizationRunnerFactory;
 import io.airbyte.workers.process.ProcessFactory;
-import io.airbyte.workers.sync.DbtLauncherWorker;
+import io.airbyte.workers.temporal.CancellationHandler;
 import io.airbyte.workers.temporal.TemporalAttemptExecution;
-import io.micronaut.context.annotation.Value;
+import io.airbyte.workers.temporal.TemporalUtils;
 import io.temporal.activity.Activity;
 import io.temporal.activity.ActivityExecutionContext;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
+import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
 
-@Singleton
 public class DbtTransformationActivityImpl implements DbtTransformationActivity {
 
-  private final Optional<ContainerOrchestratorConfig> containerOrchestratorConfig;
   private final WorkerConfigs workerConfigs;
-  private final ProcessFactory processFactory;
+  private final ProcessFactory jobProcessFactory;
   private final SecretsHydrator secretsHydrator;
   private final Path workspaceRoot;
+  private final AirbyteConfigValidator validator;
   private final WorkerEnvironment workerEnvironment;
   private final LogConfigs logConfigs;
+  private final JobPersistence jobPersistence;
   private final String airbyteVersion;
-  private final Integer serverPort;
-  private final AirbyteConfigValidator airbyteConfigValidator;
-  private final TemporalUtils temporalUtils;
-  private final AirbyteApiClient airbyteApiClient;
+  private final Optional<WorkerApp.ContainerOrchestratorConfig> containerOrchestratorConfig;
 
-  public DbtTransformationActivityImpl(@Named("containerOrchestratorConfig") final Optional<ContainerOrchestratorConfig> containerOrchestratorConfig,
-                                       @Named("defaultWorkerConfigs") final WorkerConfigs workerConfigs,
-                                       @Named("defaultProcessFactory") final ProcessFactory processFactory,
+  public DbtTransformationActivityImpl(final Optional<WorkerApp.ContainerOrchestratorConfig> containerOrchestratorConfig,
+                                       final WorkerConfigs workerConfigs,
+                                       final ProcessFactory jobProcessFactory,
                                        final SecretsHydrator secretsHydrator,
-                                       @Named("workspaceRoot") final Path workspaceRoot,
+                                       final Path workspaceRoot,
                                        final WorkerEnvironment workerEnvironment,
                                        final LogConfigs logConfigs,
-                                       @Value("${airbyte.version}") final String airbyteVersion,
-                                       @Value("${micronaut.server.port}") final Integer serverPort,
-                                       final AirbyteConfigValidator airbyteConfigValidator,
-                                       final TemporalUtils temporalUtils,
-                                       final AirbyteApiClient airbyteApiClient) {
+                                       final JobPersistence jobPersistence,
+                                       final String airbyteVersion) {
     this.containerOrchestratorConfig = containerOrchestratorConfig;
     this.workerConfigs = workerConfigs;
-    this.processFactory = processFactory;
+    this.jobProcessFactory = jobProcessFactory;
     this.secretsHydrator = secretsHydrator;
     this.workspaceRoot = workspaceRoot;
+    this.validator = new AirbyteConfigValidator();
     this.workerEnvironment = workerEnvironment;
     this.logConfigs = logConfigs;
+    this.jobPersistence = jobPersistence;
     this.airbyteVersion = airbyteVersion;
-    this.serverPort = serverPort;
-    this.airbyteConfigValidator = airbyteConfigValidator;
-    this.temporalUtils = temporalUtils;
-    this.airbyteApiClient = airbyteApiClient;
   }
 
-  @Trace(operationName = ACTIVITY_TRACE_OPERATION_NAME)
   @Override
   public Void run(final JobRunConfig jobRunConfig,
                   final IntegrationLauncherConfig destinationLauncherConfig,
                   final ResourceRequirements resourceRequirements,
                   final OperatorDbtInput input) {
-    ApmTraceUtils.addTagsToTrace(
-        Map.of(ATTEMPT_NUMBER_KEY, jobRunConfig.getAttemptId(), JOB_ID_KEY, jobRunConfig.getJobId(), DESTINATION_DOCKER_IMAGE_KEY,
-            destinationLauncherConfig.getDockerImage()));
     final ActivityExecutionContext context = Activity.getExecutionContext();
-    return temporalUtils.withBackgroundHeartbeat(
+    return TemporalUtils.withBackgroundHeartbeat(
         () -> {
           final var fullDestinationConfig = secretsHydrator.hydrate(input.getDestinationConfiguration());
           final var fullInput = Jsons.clone(input).withDestinationConfiguration(fullDestinationConfig);
 
           final Supplier<OperatorDbtInput> inputSupplier = () -> {
-            airbyteConfigValidator.ensureAsRuntime(ConfigSchema.OPERATOR_DBT_INPUT, Jsons.jsonNode(fullInput));
+            validator.ensureAsRuntime(ConfigSchema.OPERATOR_DBT_INPUT, Jsons.jsonNode(fullInput));
             return fullInput;
           };
 
@@ -125,7 +101,7 @@ public class DbtTransformationActivityImpl implements DbtTransformationActivity 
                   workerFactory,
                   inputSupplier,
                   new CancellationHandler.TemporalCancellationHandler(context),
-                  airbyteApiClient,
+                  jobPersistence,
                   airbyteVersion,
                   () -> context);
 
@@ -142,23 +118,21 @@ public class DbtTransformationActivityImpl implements DbtTransformationActivity 
         Math.toIntExact(jobRunConfig.getAttemptId()),
         resourceRequirements,
         new DbtTransformationRunner(
-            processFactory, new DefaultNormalizationRunner(
-                processFactory,
-                destinationLauncherConfig.getNormalizationDockerImage(),
-                destinationLauncherConfig.getNormalizationIntegrationType())));
+            workerConfigs,
+            jobProcessFactory, NormalizationRunnerFactory.create(
+                workerConfigs,
+                destinationLauncherConfig.getDockerImage(),
+                jobProcessFactory,
+                NormalizationRunnerFactory.NORMALIZATION_VERSION)));
   }
 
   private CheckedSupplier<Worker<OperatorDbtInput, Void>, Exception> getContainerLauncherWorkerFactory(
                                                                                                        final WorkerConfigs workerConfigs,
                                                                                                        final IntegrationLauncherConfig destinationLauncherConfig,
                                                                                                        final JobRunConfig jobRunConfig,
-                                                                                                       final Supplier<ActivityExecutionContext> activityContext) {
-    final JobIdRequestBody id = new JobIdRequestBody();
-    id.setId(Long.valueOf(jobRunConfig.getJobId()));
-
-    final var jobScope = AirbyteApiClient.retryWithJitter(
-        () -> airbyteApiClient.getJobsApi().getJobInfo(id).getJob().getConfigId(),
-        "get job scope");
+                                                                                                       final Supplier<ActivityExecutionContext> activityContext)
+      throws IOException {
+    final var jobScope = jobPersistence.getJob(Long.parseLong(jobRunConfig.getJobId())).getScope();
     final var connectionId = UUID.fromString(jobScope);
 
     return () -> new DbtLauncherWorker(
@@ -167,9 +141,7 @@ public class DbtTransformationActivityImpl implements DbtTransformationActivity 
         jobRunConfig,
         workerConfigs,
         containerOrchestratorConfig.get(),
-        activityContext,
-        serverPort,
-        temporalUtils);
+        activityContext);
   }
 
 }

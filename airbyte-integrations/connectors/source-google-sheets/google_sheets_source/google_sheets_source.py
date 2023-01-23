@@ -5,14 +5,13 @@
 
 import json
 import socket
-from typing import Any, Generator, List, MutableMapping, Union
+from typing import Dict, Generator
 
 from airbyte_cdk.logger import AirbyteLogger
 from airbyte_cdk.models.airbyte_protocol import (
     AirbyteCatalog,
     AirbyteConnectionStatus,
     AirbyteMessage,
-    AirbyteStateMessage,
     ConfiguredAirbyteCatalog,
     Status,
     Type,
@@ -126,11 +125,7 @@ class GoogleSheetsSource(Source):
             raise Exception(f"Could not run discovery: {reason}")
 
     def read(
-        self,
-        logger: AirbyteLogger,
-        config: json,
-        catalog: ConfiguredAirbyteCatalog,
-        state: Union[List[AirbyteStateMessage], MutableMapping[str, Any]] = None,
+        self, logger: AirbyteLogger, config: json, catalog: ConfiguredAirbyteCatalog, state: Dict[str, any]
     ) -> Generator[AirbyteMessage, None, None]:
         client = GoogleSheetsClient(self.get_credentials(config))
 

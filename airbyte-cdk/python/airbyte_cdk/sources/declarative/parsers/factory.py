@@ -7,10 +7,6 @@ from __future__ import annotations
 import copy
 import enum
 import importlib
-import inspect
-import typing
-import warnings
-from dataclasses import fields
 from typing import Any, List, Literal, Mapping, Type, Union, get_args, get_origin, get_type_hints
 
 from airbyte_cdk.sources.declarative.create_partial import OPTIONS_STR, create
@@ -18,8 +14,6 @@ from airbyte_cdk.sources.declarative.interpolation.jinja import JinjaInterpolati
 from airbyte_cdk.sources.declarative.parsers.class_types_registry import CLASS_TYPES_REGISTRY
 from airbyte_cdk.sources.declarative.parsers.default_implementation_registry import DEFAULT_IMPLEMENTATIONS_REGISTRY
 from airbyte_cdk.sources.declarative.types import Config
-from dataclasses_jsonschema import JsonSchemaMixin
-from jsonschema.validators import validate
 
 ComponentDefinition: Union[Literal, Mapping, List]
 
@@ -58,7 +52,7 @@ class DeclarativeComponentFactory:
     If the component definition is a mapping with neither a "class_name" nor a "type" field,
     the factory will do a best-effort attempt at inferring the component type by looking up the parent object's constructor type hints.
     If the type hint is an interface present in `DEFAULT_IMPLEMENTATIONS_REGISTRY`,
-    then the factory will create an object of its default implementation.
+    then the factory will create an object of it's default implementation.
 
     If the component definition is a list, then the factory will iterate over the elements of the list,
     instantiate its subcomponents, and return a list of instantiated objects.
@@ -105,14 +99,13 @@ class DeclarativeComponentFactory:
     def __init__(self):
         self._interpolator = JinjaInterpolation()
 
-    def create_component(self, component_definition: ComponentDefinition, config: Config, instantiate: bool = True):
+    def create_component(self, component_definition: ComponentDefinition, config: Config):
         """
         Create a component defined by `component_definition`.
 
         This method will also traverse and instantiate its subcomponents if needed.
         :param component_definition: The definition of the object to create.
         :param config: Connector's config
-        :param instantiate: The factory should create the component when True or instead perform schema validation when False
         :return: The object to create
         """
         kwargs = copy.deepcopy(component_definition)
@@ -122,50 +115,20 @@ class DeclarativeComponentFactory:
             class_name = CLASS_TYPES_REGISTRY[kwargs.pop("type")]
         else:
             raise ValueError(f"Failed to create component because it has no class_name or type. Definition: {component_definition}")
+        return self.build(class_name, config, **kwargs)
 
-        # Because configs are sometimes stored on a component a parent definition, we should remove it and rely on the config
-        # that is passed down through the factory instead
-        kwargs.pop("config", None)
-        return self.build(
-            class_name,
-            config,
-            instantiate,
-            **kwargs,
-        )
-
-    def build(self, class_or_class_name: Union[str, Type], config, instantiate: bool = True, **kwargs):
+    def build(self, class_or_class_name: Union[str, Type], config, **kwargs):
         if isinstance(class_or_class_name, str):
             class_ = self._get_class_from_fully_qualified_class_name(class_or_class_name)
         else:
             class_ = class_or_class_name
+
         # create components in options before propagating them
         if OPTIONS_STR in kwargs:
-            kwargs[OPTIONS_STR] = {
-                k: self._create_subcomponent(k, v, kwargs, config, class_, instantiate) for k, v in kwargs[OPTIONS_STR].items()
-            }
-        updated_kwargs = {k: self._create_subcomponent(k, v, kwargs, config, class_, instantiate) for k, v in kwargs.items()}
+            kwargs[OPTIONS_STR] = {k: self._create_subcomponent(k, v, kwargs, config, class_) for k, v in kwargs[OPTIONS_STR].items()}
 
-        if instantiate:
-            return create(class_, config=config, **updated_kwargs)
-        else:
-            # Because the component's data fields definitions use interfaces, we need to resolve the underlying types into the
-            # concrete classes that implement the interface before generating the schema
-            class_copy = copy.deepcopy(class_)
-            DeclarativeComponentFactory._transform_interface_to_union(class_copy)
-
-            # dataclasses_jsonschema can throw warnings when a declarative component has a fields cannot be turned into a schema.
-            # Some builtin field types like Any or DateTime get flagged, but are not as critical to schema generation and validation
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", category=UserWarning)
-                schema = class_copy.json_schema()
-
-            component_definition = {
-                **updated_kwargs,
-                **{k: v for k, v in updated_kwargs.get(OPTIONS_STR, {}).items() if k not in updated_kwargs},
-                "config": config,
-            }
-            validate(component_definition, schema)
-            return lambda: component_definition
+        updated_kwargs = {k: self._create_subcomponent(k, v, kwargs, config, class_) for k, v in kwargs.items()}
+        return create(class_, config=config, **updated_kwargs)
 
     @staticmethod
     def _get_class_from_fully_qualified_class_name(class_name: str):
@@ -178,7 +141,7 @@ class DeclarativeComponentFactory:
     def _merge_dicts(d1, d2):
         return {**d1, **d2}
 
-    def _create_subcomponent(self, key, definition, kwargs, config, parent_class, instantiate: bool = True):
+    def _create_subcomponent(self, key, definition, kwargs, config, parent_class):
         """
         There are 5 ways to define a component.
         1. dict with "class_name" field -> create an object of type "class_name"
@@ -190,14 +153,14 @@ class DeclarativeComponentFactory:
         if self.is_object_definition_with_class_name(definition):
             # propagate kwargs to inner objects
             definition[OPTIONS_STR] = self._merge_dicts(kwargs.get(OPTIONS_STR, dict()), definition.get(OPTIONS_STR, dict()))
-            return self.create_component(definition, config, instantiate)()
+            return self.create_component(definition, config)()
         elif self.is_object_definition_with_type(definition):
             # If type is set instead of class_name, get the class_name from the CLASS_TYPES_REGISTRY
             definition[OPTIONS_STR] = self._merge_dicts(kwargs.get(OPTIONS_STR, dict()), definition.get(OPTIONS_STR, dict()))
             object_type = definition.pop("type")
             class_name = CLASS_TYPES_REGISTRY[object_type]
             definition["class_name"] = class_name
-            return self.create_component(definition, config, instantiate)()
+            return self.create_component(definition, config)()
         elif isinstance(definition, dict):
             # Try to infer object type
             expected_type = self.get_default_type(key, parent_class)
@@ -206,22 +169,17 @@ class DeclarativeComponentFactory:
             if expected_type and not self._is_builtin_type(expected_type):
                 definition["class_name"] = expected_type
                 definition[OPTIONS_STR] = self._merge_dicts(kwargs.get(OPTIONS_STR, dict()), definition.get(OPTIONS_STR, dict()))
-                return self.create_component(definition, config, instantiate)()
+                return self.create_component(definition, config)()
             else:
                 return definition
         elif isinstance(definition, list):
             return [
                 self._create_subcomponent(
-                    key,
-                    sub,
-                    kwargs,
-                    config,
-                    parent_class,
-                    instantiate,
+                    key, sub, self._merge_dicts(kwargs.get(OPTIONS_STR, dict()), self._get_subcomponent_options(sub)), config, parent_class
                 )
                 for sub in definition
             ]
-        elif instantiate:
+        else:
             expected_type = self.get_default_type(key, parent_class)
             if expected_type and not isinstance(definition, expected_type):
                 # call __init__(definition) if definition is not a dict and is not of the expected type
@@ -229,16 +187,14 @@ class DeclarativeComponentFactory:
                 options = kwargs.get(OPTIONS_STR, {})
                 try:
                     # enums can't accept options
-                    if issubclass(expected_type, enum.Enum) or self.is_primitive(definition):
+                    if issubclass(expected_type, enum.Enum):
                         return expected_type(definition)
                     else:
                         return expected_type(definition, options=options)
                 except Exception as e:
                     raise Exception(f"failed to instantiate type {expected_type}. {e}")
-        return definition
-
-    def is_primitive(self, obj):
-        return isinstance(obj, (int, float, bool))
+            else:
+                return definition
 
     @staticmethod
     def is_object_definition_with_class_name(definition):
@@ -246,11 +202,7 @@ class DeclarativeComponentFactory:
 
     @staticmethod
     def is_object_definition_with_type(definition):
-        # The `type` field is an overloaded term in the context of the low-code manifest. As part of the language, `type` is shorthand
-        # for convenience to avoid defining the entire classpath. For the connector specification, `type` is a part of the spec schema.
-        # For spec parsing, as part of this check, when the type is set to object, we want it to remain a mapping. But when type is
-        # defined any other way, then it should be parsed as a declarative component in the manifest.
-        return isinstance(definition, dict) and "type" in definition and definition["type"] != "object"
+        return isinstance(definition, dict) and "type" in definition
 
     @staticmethod
     def get_default_type(parameter_name, parent_class):
@@ -286,39 +238,3 @@ class DeclarativeComponentFactory:
         if not cls:
             return False
         return cls.__module__ == "builtins"
-
-    @staticmethod
-    def _transform_interface_to_union(expand_class: type):
-        class_fields = fields(expand_class)
-        for field in class_fields:
-            unpacked_field_types = DeclarativeComponentFactory.unpack(field.type)
-            expand_class.__annotations__[field.name] = unpacked_field_types
-        return expand_class
-
-    @staticmethod
-    def unpack(field_type: type):
-        """
-        Recursive function that takes in a field type and unpacks the underlying fields (if it is a generic) or
-        returns the field type if it is not in a generic container
-        :param field_type: The current set of field types to unpack
-        :return: A list of unpacked types
-        """
-        generic_type = typing.get_origin(field_type)
-        if generic_type is None:
-            # Functions as the base case since the origin is none for non-typing classes. If it is an interface then we derive
-            # and return the union of its subclasses or return the original type if it is a concrete class or a primitive type
-            if inspect.isclass(field_type) and issubclass(field_type, JsonSchemaMixin):
-                subclasses = field_type.__subclasses__()
-                if subclasses:
-                    return Union[tuple(subclasses)]
-            return field_type
-        elif generic_type is list or generic_type is Union:
-            unpacked_types = [DeclarativeComponentFactory.unpack(underlying_type) for underlying_type in typing.get_args(field_type)]
-            if generic_type is list:
-                # For lists we extract the underlying list type and attempt to unpack it again since it could be another container
-                return List[Union[tuple(unpacked_types)]]
-            elif generic_type is Union:
-                # For Unions (and Options which evaluate into a Union of types and NoneType) we unpack the underlying type since it could
-                # be another container
-                return Union[tuple(unpacked_types)]
-        return field_type

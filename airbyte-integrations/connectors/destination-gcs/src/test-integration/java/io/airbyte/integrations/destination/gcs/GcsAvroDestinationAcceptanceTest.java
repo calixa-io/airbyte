@@ -28,7 +28,7 @@ import org.apache.avro.generic.GenericDatumReader;
 
 public class GcsAvroDestinationAcceptanceTest extends GcsAvroParquetDestinationAcceptanceTest {
 
-  public GcsAvroDestinationAcceptanceTest() {
+  protected GcsAvroDestinationAcceptanceTest() {
     super(S3Format.AVRO);
   }
 
@@ -79,7 +79,7 @@ public class GcsAvroDestinationAcceptanceTest extends GcsAvroParquetDestinationA
   protected Map<String, Set<Type>> retrieveDataTypesFromPersistedFiles(final String streamName, final String namespace) throws Exception {
 
     final List<S3ObjectSummary> objectSummaries = getAllSyncedObjects(streamName, namespace);
-    final Map<String, Set<Type>> resultDataTypes = new HashMap<>();
+    Map<String, Set<Type>> resultDataTypes = new HashMap<>();
 
     for (final S3ObjectSummary objectSummary : objectSummaries) {
       final S3Object object = s3Client.getObject(objectSummary.getBucketName(), objectSummary.getKey());
@@ -88,7 +88,7 @@ public class GcsAvroDestinationAcceptanceTest extends GcsAvroParquetDestinationA
           new GenericDatumReader<>())) {
         while (dataFileReader.hasNext()) {
           final GenericData.Record record = dataFileReader.next();
-          final Map<String, Set<Type>> actualDataTypes = getTypes(record);
+          Map<String, Set<Type>> actualDataTypes = getTypes(record);
           resultDataTypes.putAll(actualDataTypes);
         }
       }

@@ -48,13 +48,12 @@ cmd_build() {
   # Note that we are only building (and testing) once on this build machine's architecture
   # Learn more @ https://github.com/airbytehq/airbyte/pull/13004
   ./gradlew --no-daemon "$(_to_gradle_path "$path" clean)"
+  ./gradlew --no-daemon "$(_to_gradle_path "$path" build)"
 
   if [ "$run_tests" = false ] ; then
-    echo "Building and skipping unit tests + integration tests..."
-    ./gradlew --no-daemon "$(_to_gradle_path "$path" build)" -x test
+    echo "Skipping integration tests..."
   else
-    echo "Building and running unit tests + integration tests..."
-    ./gradlew --no-daemon "$(_to_gradle_path "$path" build)"
+    echo "Running integration tests..."
 
     if test "$path" == "airbyte-integrations/bases/base-normalization"; then
       ./gradlew --no-daemon --scan :airbyte-integrations:bases:base-normalization:airbyteDocker
@@ -220,7 +219,7 @@ cmd_publish() {
 
   # Install docker emulators
   # TODO: Don't run this command on M1 macs locally (it won't work and isn't needed)
-  apt-get update && apt-get install -y qemu-user-static
+  docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
   # log into docker
   if test -z "${DOCKER_HUB_USERNAME}"; then
@@ -300,7 +299,7 @@ cmd_publish() {
     docker manifest rm $versioned_image
 
     # delete the temporary image tags made with arch_versioned_image
-    sleep 10
+    sleep 5
     for arch in $(echo $build_arch | sed "s/,/ /g")
     do
       local arch_versioned_tag=`echo $arch | sed "s/\//-/g"`-$image_version

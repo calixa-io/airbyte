@@ -22,12 +22,10 @@ export function useConfig<T extends Config>(): T {
   return useMemo(() => configService.config as unknown as T, [configService.config]);
 }
 
-const ConfigServiceInner: React.FC<
-  React.PropsWithChildren<{
-    defaultConfig: Config;
-    providers?: ValueProvider<Config>;
-  }>
-> = ({ children, defaultConfig, providers }) => {
+const ConfigServiceInner: React.FC<{
+  defaultConfig: Config;
+  providers?: ValueProvider<Config>;
+}> = ({ children, defaultConfig, providers }) => {
   const { loading, value } = useAsync(
     async () => (providers ? applyProviders(defaultConfig, providers) : defaultConfig),
     [providers]
@@ -41,4 +39,7 @@ const ConfigServiceInner: React.FC<
   return <ConfigContext.Provider value={config}>{children}</ConfigContext.Provider>;
 };
 
-export const ConfigServiceProvider = React.memo(ConfigServiceInner);
+export const ConfigServiceProvider: React.FC<{
+  defaultConfig: Config;
+  providers?: ValueProvider<Config>;
+}> = React.memo(ConfigServiceInner);

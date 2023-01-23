@@ -3,17 +3,14 @@ import { useIntl } from "react-intl";
 import { useAsyncFn } from "react-use";
 
 import { SourceDefinitionRead } from "core/request/AirbyteClient";
-import { useTrackPage, PageTrackingCodes } from "hooks/services/Analytics";
-import { useGetConnectorsOutOfDate, useUpdateSourceDefinitions } from "hooks/services/useConnector";
+import useConnector from "hooks/services/useConnector";
 import { useSourceList } from "hooks/services/useSourceHook";
 import { useSourceDefinitionList, useUpdateSourceDefinition } from "services/connector/SourceDefinitionService";
 
 import ConnectorsView from "./components/ConnectorsView";
 
 const SourcesPage: React.FC = () => {
-  useTrackPage(PageTrackingCodes.SETTINGS_SOURCE);
-
-  const [isUpdateSuccess, setIsUpdateSuccess] = useState(false);
+  const [isUpdateSuccess, setIsUpdateSucces] = useState(false);
   const [feedbackList, setFeedbackList] = useState<Record<string, string>>({});
 
   const { formatMessage } = useIntl();
@@ -22,8 +19,7 @@ const SourcesPage: React.FC = () => {
 
   const { mutateAsync: updateSourceDefinition } = useUpdateSourceDefinition();
 
-  const { hasNewSourceVersion } = useGetConnectorsOutOfDate();
-  const { updateAllSourceVersions } = useUpdateSourceDefinitions();
+  const { hasNewSourceVersion, updateAllSourceVersions } = useConnector();
 
   const onUpdateVersion = useCallback(
     async ({ id, version }: { id: string; version: string }) => {
@@ -60,11 +56,11 @@ const SourcesPage: React.FC = () => {
   }, [sources, sourceDefinitions]);
 
   const [{ loading, error }, onUpdate] = useAsyncFn(async () => {
-    setIsUpdateSuccess(false);
+    setIsUpdateSucces(false);
     await updateAllSourceVersions();
-    setIsUpdateSuccess(true);
+    setIsUpdateSucces(true);
     setTimeout(() => {
-      setIsUpdateSuccess(false);
+      setIsUpdateSucces(false);
     }, 2000);
   }, [updateAllSourceVersions]);
 

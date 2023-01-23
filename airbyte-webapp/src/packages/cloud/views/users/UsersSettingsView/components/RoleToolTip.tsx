@@ -2,7 +2,15 @@ import React from "react";
 import { FormattedMessage } from "react-intl";
 import styled from "styled-components";
 
-import { InfoTooltip } from "components/ui/Tooltip";
+import ToolTip from "components/ToolTip";
+
+import InfoIcon from "./InfoIcon";
+
+const Info = styled.div`
+  margin-left: 7px;
+  vertical-align: middle;
+  display: inline-block;
+`;
 
 const LineBlock = styled.div`
   text-transform: none;
@@ -21,18 +29,26 @@ const LineBlock = styled.div`
 
 const RoleToolTip: React.FC = () => {
   return (
-    <InfoTooltip>
-      <LineBlock>
-        <FormattedMessage id="settings.accessManagement.roleViewers" />
-      </LineBlock>
-      <LineBlock>
-        <FormattedMessage id="settings.accessManagement.roleEditors" />
-      </LineBlock>
+    <ToolTip
+      control={
+        <Info>
+          <InfoIcon />
+        </Info>
+      }
+    >
+      <>
+        <LineBlock>
+          <FormattedMessage id="settings.accessManagement.roleViewers" />
+        </LineBlock>
+        <LineBlock>
+          <FormattedMessage id="settings.accessManagement.roleEditors" />
+        </LineBlock>
 
-      <LineBlock>
-        <FormattedMessage id="settings.accessManagement.roleAdmin" />
-      </LineBlock>
-    </InfoTooltip>
+        <LineBlock>
+          <FormattedMessage id="settings.accessManagement.roleAdmin" />
+        </LineBlock>
+      </>
+    </ToolTip>
   );
 };
 

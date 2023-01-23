@@ -202,19 +202,11 @@ class Campaigns(BingAdsStream):
     data_field: str = "Campaign"
     service_name: str = "CampaignManagement"
     operation_name: str = "GetCampaignsByAccountId"
-    additional_fields: Iterable[str] = [
-        "AdScheduleUseSearcherTimeZone",
-        "BidStrategyId",
-        "CpvCpmBiddingScheme",
-        "DynamicDescriptionSetting",
-        "DynamicFeedSetting",
-        "MaxConversionValueBiddingScheme",
-        "MultimediaAdsBidAdjustment",
-        "TargetImpressionShareBiddingScheme",
-        "TargetSetting",
-        "VerifiedTrackingSetting",
-    ]
-    campaign_types: Iterable[str] = ["Audience", "DynamicSearchAds", "Search", "Shopping"]
+    additional_fields: str = (
+        "AdScheduleUseSearcherTimeZone BidStrategyId CpvCpmBiddingScheme DynamicDescriptionSetting"
+        " DynamicFeedSetting MaxConversionValueBiddingScheme MultimediaAdsBidAdjustment"
+        " TargetImpressionShareBiddingScheme TargetSetting VerifiedTrackingSetting"
+    )
 
     def request_params(
         self,
@@ -223,8 +215,7 @@ class Campaigns(BingAdsStream):
     ) -> MutableMapping[str, Any]:
         return {
             "AccountId": stream_slice["account_id"],
-            "CampaignType": " ".join(self.campaign_types),
-            "ReturnAdditionalFields": " ".join(self.additional_fields),
+            "ReturnAdditionalFields": self.additional_fields,
         }
 
     def stream_slices(
@@ -391,6 +382,7 @@ class CampaignPerformanceReport(ReportsMixin, BingAdsStream):
         *AVERAGE_FIELDS,
         *CONVERSION_FIELDS,
         *LOW_QUALITY_FIELDS,
+        *HISTORICAL_FIELDS,
         *REVENUE_FIELDS,
         *BUDGET_FIELDS,
     ]
@@ -402,26 +394,14 @@ class CampaignPerformanceReportHourly(CampaignPerformanceReport):
 
 class CampaignPerformanceReportDaily(CampaignPerformanceReport):
     report_aggregation = "Daily"
-    report_columns = [
-        *CampaignPerformanceReport.report_columns,
-        *HISTORICAL_FIELDS,
-    ]
 
 
 class CampaignPerformanceReportWeekly(CampaignPerformanceReport):
     report_aggregation = "Weekly"
-    report_columns = [
-        *CampaignPerformanceReport.report_columns,
-        *HISTORICAL_FIELDS,
-    ]
 
 
 class CampaignPerformanceReportMonthly(CampaignPerformanceReport):
     report_aggregation = "Monthly"
-    report_columns = [
-        *CampaignPerformanceReport.report_columns,
-        *HISTORICAL_FIELDS,
-    ]
 
 
 class AdPerformanceReport(ReportsMixin, BingAdsStream):
@@ -542,6 +522,7 @@ class AdGroupPerformanceReport(ReportsMixin, BingAdsStream):
         *ALL_REVENUE_FIELDS,
         *AVERAGE_FIELDS,
         *CONVERSION_FIELDS,
+        *HISTORICAL_FIELDS,
         *REVENUE_FIELDS,
     ]
 
@@ -552,26 +533,14 @@ class AdGroupPerformanceReportHourly(AdGroupPerformanceReport):
 
 class AdGroupPerformanceReportDaily(AdGroupPerformanceReport):
     report_aggregation = "Daily"
-    report_columns = [
-        *AdGroupPerformanceReport.report_columns,
-        *HISTORICAL_FIELDS,
-    ]
 
 
 class AdGroupPerformanceReportWeekly(AdGroupPerformanceReport):
     report_aggregation = "Weekly"
-    report_columns = [
-        *AdGroupPerformanceReport.report_columns,
-        *HISTORICAL_FIELDS,
-    ]
 
 
 class AdGroupPerformanceReportMonthly(AdGroupPerformanceReport):
     report_aggregation = "Monthly"
-    report_columns = [
-        *AdGroupPerformanceReport.report_columns,
-        *HISTORICAL_FIELDS,
-    ]
 
 
 class KeywordPerformanceReport(ReportsMixin, BingAdsStream):

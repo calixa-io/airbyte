@@ -6,7 +6,6 @@
     - Postgres: json_extract_path_text(<from_json>, 'path' [, 'path' [, ...}}) -> https://www.postgresql.org/docs/12/functions-json.html
     - MySQL: JSON_EXTRACT(json_doc, 'path' [, 'path'] ...) -> https://dev.mysql.com/doc/refman/8.0/en/json-search-functions.html
     - ClickHouse: JSONExtractString(json_doc, 'path' [, 'path'] ...) -> https://clickhouse.com/docs/en/sql-reference/functions/json-functions/
-    - TiDB: JSON_EXTRACT(json_doc, 'path' [, 'path'] ...) -> https://docs.pingcap.com/tidb/stable/json-functions
 #}
 
 {# format_json_path --------------------------------------------------     #}
@@ -98,11 +97,6 @@
     {{ "'" ~ str_list|join("','") ~ "'" }}
 {%- endmacro %}
 
-{% macro tidb__format_json_path(json_path_list) -%}
-    {# -- '$."x"."y"."z"' #}
-    {{ "'$.\"" ~ json_path_list|join(".") ~ "\"'" }}
-{%- endmacro %}
-
 {# json_extract -------------------------------------------------     #}
 
 {% macro json_extract(from_table, json_column, json_path_list, normalized_json_path) -%}
@@ -172,14 +166,6 @@
     {% endif -%}
 {%- endmacro %}
 
-{% macro tidb__json_extract(from_table, json_column, json_path_list, normalized_json_path) -%}
-    {%- if from_table|string() == '' %}
-        json_extract({{ json_column }}, {{ format_json_path(normalized_json_path) }})
-    {% else %}
-        json_extract({{ from_table }}.{{ json_column }}, {{ format_json_path(normalized_json_path) }})
-    {% endif -%}
-{%- endmacro %}
-
 {# json_extract_scalar -------------------------------------------------     #}
 
 {% macro json_extract_scalar(json_column, json_path_list, normalized_json_path) -%}
@@ -226,14 +212,6 @@
     JSONExtractRaw(assumeNotNull({{ json_column }}), {{ format_json_path(json_path_list) }})
 {%- endmacro %}
 
-{% macro tidb__json_extract_scalar(json_column, json_path_list, normalized_json_path) -%}
-    IF(
-        JSON_UNQUOTE(JSON_EXTRACT({{ json_column }}, {{ format_json_path(normalized_json_path) }})) = 'null',
-        NULL,
-        JSON_UNQUOTE(JSON_EXTRACT({{ json_column }}, {{ format_json_path(normalized_json_path) }}))
-    )
-{%- endmacro %}
-
 {# json_extract_array -------------------------------------------------     #}
 
 {% macro json_extract_array(json_column, json_path_list, normalized_json_path) -%}
@@ -278,10 +256,6 @@
 
 {% macro clickhouse__json_extract_array(json_column, json_path_list, normalized_json_path) -%}
     JSONExtractArrayRaw(assumeNotNull({{ json_column }}), {{ format_json_path(json_path_list) }})
-{%- endmacro %}
-
-{% macro tidb__json_extract_array(json_column, json_path_list, normalized_json_path) -%}
-    json_extract({{ json_column }}, {{ format_json_path(normalized_json_path) }})
 {%- endmacro %}
 
 {# json_extract_string_array -------------------------------------------------     #}

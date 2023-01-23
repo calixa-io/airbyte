@@ -1,24 +1,18 @@
 import { Field, FieldProps, Formik } from "formik";
 import React from "react";
 import { FormattedMessage, useIntl } from "react-intl";
-import { NavigateOptions, To, useNavigate } from "react-router-dom";
 import * as yup from "yup";
 
-import { LabeledInput, Link } from "components";
-import { HeadTitle } from "components/common/HeadTitle";
-import { Button } from "components/ui/Button";
+import { LabeledInput, Link, LoadingButton } from "components";
+import HeadTitle from "components/HeadTitle";
 
-import { PageTrackingCodes, useTrackPage } from "hooks/services/Analytics";
-import { useQuery } from "hooks/useQuery";
-import { CloudRoutes } from "packages/cloud/cloudRoutePaths";
+import useRouter from "hooks/useRouter";
+import { CloudRoutes } from "packages/cloud/cloudRoutes";
 import { FieldError } from "packages/cloud/lib/errors/FieldError";
 import { useAuthService } from "packages/cloud/services/auth/AuthService";
 import { BottomBlock, FieldItem, Form } from "packages/cloud/views/auth/components/FormComponents";
 import { FormTitle } from "packages/cloud/views/auth/components/FormTitle";
 
-import { OAuthLogin } from "../OAuthLogin";
-import { Separator } from "../SignupPage/components/Separator";
-import { Disclaimer } from "../SignupPage/components/SignupForm";
 import styles from "./LoginPage.module.scss";
 
 const LoginPageValidationSchema = yup.object().shape({
@@ -26,13 +20,10 @@ const LoginPageValidationSchema = yup.object().shape({
   password: yup.string().required("form.empty.error"),
 });
 
-export const LoginPage: React.FC = () => {
+const LoginPage: React.FC = () => {
   const { formatMessage } = useIntl();
   const { login } = useAuthService();
-  const query = useQuery<{ from?: string }>();
-  const navigate = useNavigate();
-  const replace = (path: To, state?: NavigateOptions) => navigate(path, { ...state, replace: true });
-  useTrackPage(PageTrackingCodes.LOGIN);
+  const { query, replace } = useRouter();
 
   return (
     <div>
@@ -105,18 +96,16 @@ export const LoginPage: React.FC = () => {
                 >
                   <FormattedMessage id="login.forgotPassword" />
                 </Link>
-                <Button size="lg" type="submit" isLoading={isSubmitting}>
+                <LoadingButton className={styles.logInBtn} type="submit" isLoading={isSubmitting}>
                   <FormattedMessage id="login.login" />
-                </Button>
+                </LoadingButton>
               </>
             </BottomBlock>
           </Form>
         )}
       </Formik>
-
-      <Separator />
-      <OAuthLogin />
-      <Disclaimer />
     </div>
   );
 };
+
+export default LoginPage;

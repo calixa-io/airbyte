@@ -1,16 +1,33 @@
-ARG JDK_IMAGE=airbyte/airbyte-base-java-image:1.0
+ARG JDK_VERSION=19-slim-bullseye
+ARG JDK_IMAGE=openjdk:${JDK_VERSION}
 FROM ${JDK_IMAGE} AS worker
 
 ARG DOCKER_BUILD_ARCH=amd64
 
-RUN amazon-linux-extras install -y docker
-RUN yum install -y jq tar && yum clean all
+# Install Docker to launch worker images. Eventually should be replaced with Docker-java.
+# See https://gitter.im/docker-java/docker-java?at=5f3eb87ba8c1780176603f4e for more information on why we are not currently using Docker-java
+# See https://docs.docker.com/engine/install/debian/ to understand what the following commands are
+# doing.
+RUN apt-get update && apt-get install -y \
+                          ca-certificates \
+                          wget \
+                          gnupg \
+                          lsb-release
+RUN mkdir -p /etc/apt/keyrings
+RUN wget -O - https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+RUN echo \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
+      $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+RUN apt-get update && apt-get install -y docker-ce-cli jq
 
-RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/${DOCKER_BUILD_ARCH}/kubectl" \
-        && chmod +x kubectl && mv kubectl /usr/local/bin/
+# Install kubectl for copying files to kube pods. Eventually should be replaced with a kube java client.
+# See https://github.com/airbytehq/airbyte/issues/8643 for more information on why we are using kubectl for copying.
+# The following commands were taken from https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#install-using-native-package-management
+RUN wget -O /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+RUN echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list
+RUN apt-get update && apt-get install -y kubectl
 
-# Don't change this manually.  Bump version expects to make moves based on this string
-ARG VERSION=0.40.28
+ARG VERSION=0.39.42-alpha
 
 ENV APPLICATION airbyte-workers
 ENV VERSION ${VERSION}
@@ -19,9 +36,6 @@ WORKDIR /app
 
 # Move worker app
 ADD bin/${APPLICATION}-${VERSION}.tar /app
-
-# Grab well-known types file
-COPY WellKnownTypes.json /app
 
 # wait for upstream dependencies to become available before starting server
 ENTRYPOINT ["/bin/bash", "-c", "${APPLICATION}-${VERSION}/bin/${APPLICATION}"]

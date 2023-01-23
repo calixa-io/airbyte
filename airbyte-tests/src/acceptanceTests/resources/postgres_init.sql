@@ -1,7 +1,7 @@
 CREATE
     TABLE
         id_and_name(
-            id INTEGER NOT NULL,
+            id INTEGER,
             name VARCHAR(200)
         );
 

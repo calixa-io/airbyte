@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useMemo } from "react";
 
-import { Toast } from "components/ui/Toast";
+import SingletonCard from "components/SingletonCard";
 
 import useTypesafeReducer from "hooks/useTypesafeReducer";
 
@@ -32,9 +32,10 @@ const NotificationService = ({ children }: { children: React.ReactNode }) => {
       <notificationServiceContext.Provider value={notificationService}>{children}</notificationServiceContext.Provider>
       {firstNotification ? (
         // Show only first notification
-        <Toast
+        <SingletonCard
+          title={firstNotification.title}
           text={firstNotification.text}
-          type={firstNotification.type}
+          hasError={firstNotification.isError}
           onClose={
             firstNotification.nonClosable
               ? undefined

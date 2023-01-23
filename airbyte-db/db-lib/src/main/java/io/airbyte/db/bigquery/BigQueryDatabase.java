@@ -5,7 +5,6 @@
 package io.airbyte.db.bigquery;
 
 import static java.util.Objects.isNull;
-import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.api.gax.retrying.RetrySettings;
@@ -21,9 +20,7 @@ import com.google.cloud.bigquery.QueryParameterValue;
 import com.google.cloud.bigquery.StandardSQLTypeName;
 import com.google.cloud.bigquery.Table;
 import com.google.common.base.Charsets;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Streams;
-import io.airbyte.config.WorkerEnvConstants;
 import io.airbyte.db.SqlDatabase;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -32,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -44,7 +40,6 @@ import org.threeten.bp.Duration;
 public class BigQueryDatabase extends SqlDatabase {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(BigQueryDatabase.class);
-  private static final String AGENT_TEMPLATE = "%s (GPN: Airbyte; staging)";
 
   private final BigQuery bigQuery;
   private final BigQuerySourceOperations sourceOperations;
@@ -65,7 +60,6 @@ public class BigQueryDatabase extends SqlDatabase {
       bigQuery = bigQueryBuilder
           .setProjectId(projectId)
           .setCredentials(!isNull(credentials) ? credentials : ServiceAccountCredentials.getApplicationDefault())
-          .setHeaderProvider(() -> ImmutableMap.of("user-agent", getUserAgentHeader(getConnectorVersion())))
           .setRetrySettings(RetrySettings
               .newBuilder()
               .setMaxAttempts(10)
@@ -77,16 +71,6 @@ public class BigQueryDatabase extends SqlDatabase {
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  private String getUserAgentHeader(final String connectorVersion) {
-    return String.format(AGENT_TEMPLATE, connectorVersion);
-  }
-
-  private String getConnectorVersion() {
-    return Optional.ofNullable(System.getenv(WorkerEnvConstants.WORKER_CONNECTOR_IMAGE))
-        .orElse(EMPTY)
-        .replace("airbyte/", EMPTY).replace(":", "/");
   }
 
   @Override

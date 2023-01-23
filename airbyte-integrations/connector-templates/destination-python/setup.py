@@ -9,7 +9,7 @@ MAIN_REQUIREMENTS = [
     "airbyte-cdk",
 ]
 
-TEST_REQUIREMENTS = ["pytest~=6.2"]
+TEST_REQUIREMENTS = ["pytest~=6.1"]
 
 setup(
     name="destination_{{snakeCase name}}",

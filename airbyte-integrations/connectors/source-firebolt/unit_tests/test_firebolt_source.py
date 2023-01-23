@@ -4,7 +4,7 @@
 
 from datetime import date, datetime
 from decimal import Decimal
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from airbyte_cdk.models import (
     AirbyteMessage,
@@ -18,8 +18,15 @@ from airbyte_cdk.models import (
     Type,
 )
 from pytest import fixture, mark
-from source_firebolt.database import get_table_structure, parse_config
-from source_firebolt.source import SUPPORTED_SYNC_MODES, SourceFirebolt, convert_type, establish_connection
+from source_firebolt.database import parse_config
+from source_firebolt.source import (
+    SUPPORTED_SYNC_MODES,
+    SourceFirebolt,
+    convert_type,
+    establish_connection,
+    get_firebolt_tables,
+    get_table_stream,
+)
 from source_firebolt.utils import airbyte_message_from_data, format_fetch_result
 
 
@@ -75,17 +82,25 @@ def stream2() -> AirbyteStream:
 
 @fixture
 def table1_structure():
-    return [("col1", "STRING", 0), ("col2", "INT", 0)]
+    return [("table1", "col1", "STRING", 0), ("table1", "col2", "INT", 0)]
 
 
 @fixture
 def table2_structure():
-    return [("col3", "ARRAY", 0), ("col4", "DECIMAL", 0)]
+    return [("table2", "col3", "ARRAY", 0), ("table2", "col4", "DECIMAL", 0)]
 
 
 @fixture
 def logger():
     return MagicMock()
+
+
+@fixture(name="mock_connection")
+def async_connection_cursor_mock():
+    connection = MagicMock()
+    cursor = AsyncMock()
+    connection.cursor.return_value = cursor
+    return connection, cursor
 
 
 def test_parse_config(config, logger):
@@ -115,7 +130,6 @@ def test_connection(mock_connection, config, config_no_engine, logger):
         ("INT", False, {"type": "integer"}),
         ("int", False, {"type": "integer"}),
         ("LONG", False, {"type": "integer"}),
-        ("DECIMAL(4,15)", False, {"type": "string", "airbyte_type": "big_number"}),
         (
             "TIMESTAMP",
             False,
@@ -125,7 +139,7 @@ def test_connection(mock_connection, config, config_no_engine, logger):
                 "airbyte_type": "timestamp_without_timezone",
             },
         ),
-        ("ARRAY(ARRAY(INT NOT NULL))", False, {"type": "array", "items": {"type": "array", "items": {"type": ["null", "integer"]}}}),
+        ("ARRAY(ARRAY(INT))", False, {"type": "array", "items": {"type": "array", "items": {"type": ["null", "integer"]}}}),
         ("int", True, {"type": ["null", "integer"]}),
         ("DUMMY", False, {"type": "string"}),
         ("boolean", False, {"type": "integer"}),
@@ -178,6 +192,22 @@ def test_airbyte_message_from_data_no_data():
     assert result is None
 
 
+@mark.asyncio
+async def test_get_firebolt_tables(mock_connection):
+    connection, cursor = mock_connection
+    cursor.fetchall.return_value = [("table1",), ("table2",)]
+    result = await get_firebolt_tables(connection)
+    assert result == ["table1", "table2"]
+
+
+@mark.asyncio
+async def test_get_table_stream(mock_connection, table1_structure, stream1):
+    connection, cursor = mock_connection
+    cursor.fetchall.return_value = table1_structure
+    result = await get_table_stream(connection, "table1")
+    assert result == stream1
+
+
 @patch("source_firebolt.source.establish_connection")
 def test_check(mock_connection, config, logger):
     source = SourceFirebolt()
@@ -188,19 +218,21 @@ def test_check(mock_connection, config, logger):
     assert status.status == Status.FAILED
 
 
-@patch("source_firebolt.source.get_table_structure")
-@patch("source_firebolt.source.establish_connection")
+@patch("source_firebolt.source.get_table_stream")
+@patch("source_firebolt.source.establish_async_connection")
 def test_discover(
     mock_establish_connection,
-    mock_get_structure,
+    mock_get_stream,
+    mock_connection,
     config,
     stream1,
     stream2,
-    table1_structure,
-    table2_structure,
     logger,
 ):
-    mock_get_structure.return_value = {"table1": table1_structure, "table2": table2_structure}
+    connection, cursor = mock_connection
+    cursor.fetchall.return_value = ["table1", "table2"]
+    mock_establish_connection.return_value.__aenter__.return_value = connection
+    mock_get_stream.side_effect = [stream1, stream2]
 
     source = SourceFirebolt()
     catalog = source.discover(logger, config)
@@ -208,6 +240,7 @@ def test_discover(
     assert catalog.streams[1].name == "table2"
     assert catalog.streams[0].json_schema == stream1.json_schema
     assert catalog.streams[1].json_schema == stream2.json_schema
+    mock_establish_connection.assert_awaited_once_with(config, logger)
 
 
 @patch("source_firebolt.source.establish_connection")
@@ -259,14 +292,3 @@ def test_read_special_types_no_state(mock_connection, config, stream2, logger):
         "col3": ["2019-01-01T20:12:02", "2019-02-01T20:12:02"],
         "col4": "1231232.123459999990457054844258706536",
     }
-
-
-def test_get_table_structure(table1_structure, table2_structure):
-    # Query results contain table names as well
-    table1_query_result = [("table1",) + (item) for item in table1_structure]
-    table2_query_result = [("table2",) + (item) for item in table2_structure]
-    connection = MagicMock()
-    connection.cursor().fetchall.return_value = table1_query_result + table2_query_result
-    result = get_table_structure(connection)
-    assert result["table1"] == table1_structure
-    assert result["table2"] == table2_structure

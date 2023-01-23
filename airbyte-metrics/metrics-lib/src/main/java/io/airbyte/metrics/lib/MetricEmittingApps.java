@@ -12,7 +12,7 @@ import lombok.AllArgsConstructor;
  *
  * Application Name Conventions:
  * <p>
- * - Drop the airbyte prefix when naming applications, e.g airbyte-server -> server.
+ * - Drop the airbyte prefix when naming applications, e.g airbyte-scheduler -> scheduler.
  * <p>
  * - Use dashes to delimit application names with multiple words.
  * <p>

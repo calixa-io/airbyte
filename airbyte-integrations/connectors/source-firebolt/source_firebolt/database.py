@@ -4,8 +4,7 @@
 
 
 import json
-from collections import defaultdict
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 from airbyte_cdk.logger import AirbyteLogger
 from firebolt.async_db import Connection as AsyncConnection
@@ -73,21 +72,23 @@ async def establish_async_connection(config: json, logger: AirbyteLogger) -> Asy
     return connection
 
 
-def get_table_structure(connection: Connection) -> Dict[str, List[Tuple]]:
+async def get_firebolt_tables(connection: AsyncConnection) -> List[str]:
     """
-    Get columns and their types for all the tables and views in the database.
+    Fetch a list of tables that are compatible with Airbyte.
+    Currently this includes Fact and Dimension tables
 
     :param connection: Connection object connected to a database
 
-    :return: Dictionary containing column list of each table
+    :return: List of table names
     """
-    column_mapping = defaultdict(list)
+    query = """
+    SELECT
+        table_name
+    FROM
+        information_schema.tables
+    WHERE
+        "table_type" IN ('FACT', 'DIMENSION')
+    """
     cursor = connection.cursor()
-    cursor.execute(
-        "SELECT table_name, column_name, data_type, is_nullable FROM information_schema.columns "
-        "WHERE table_name NOT IN (SELECT table_name FROM information_schema.tables WHERE table_type IN ('EXTERNAL', 'CATALOG'))"
-    )
-    for t_name, c_name, c_type, nullable in cursor.fetchall():
-        column_mapping[t_name].append((c_name, c_type, nullable))
-    cursor.close()
-    return column_mapping
+    await cursor.execute(query)
+    return [table[0] for table in await cursor.fetchall()]

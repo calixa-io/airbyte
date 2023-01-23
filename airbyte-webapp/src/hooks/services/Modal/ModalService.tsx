@@ -1,15 +1,13 @@
 import React, { useContext, useMemo, useRef, useState } from "react";
 import { firstValueFrom, Subject } from "rxjs";
 
-import { Modal } from "components/ui/Modal";
+import { Modal } from "components";
 
 import { ModalOptions, ModalResult, ModalServiceContext } from "./types";
 
-export class ModalCancel extends Error {}
-
 const modalServiceContext = React.createContext<ModalServiceContext | undefined>(undefined);
 
-export const ModalServiceProvider: React.FC<React.PropsWithChildren<unknown>> = ({ children }) => {
+export const ModalServiceProvider: React.FC = ({ children }) => {
   // The any here is due to the fact, that every call to open a modal might come in with
   // a different type, thus we can't type this with unknown or a generic.
   // The consuming code of this service though is properly typed, so that this `any` stays
@@ -45,7 +43,6 @@ export const ModalServiceProvider: React.FC<React.PropsWithChildren<unknown>> = 
         <Modal
           title={modalOptions.title}
           size={modalOptions.size}
-          testId={modalOptions.testId}
           onClose={modalOptions.preventCancel ? undefined : () => resultSubjectRef.current?.next({ type: "canceled" })}
         >
           <modalOptions.content

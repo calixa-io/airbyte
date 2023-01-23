@@ -20,8 +20,6 @@ dependencies {
     testImplementation libs.postgresql
     testImplementation libs.connectors.testcontainers.postgresql
 
-    testImplementation libs.junit.jupiter.system.stubs
-
     implementation files(project(':airbyte-integrations:bases:base-java').airbyteDocker.outputs)
 }
 

@@ -26,7 +26,3 @@
 
     concat({{ concat_chunks|join(', ') }}, '')
 {%- endmacro %}
-
-{% macro tidb__concat(fields) -%}
-    concat({{ fields|join(', ') }})
-{%- endmacro %}

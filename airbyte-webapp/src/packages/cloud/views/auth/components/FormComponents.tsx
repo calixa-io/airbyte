@@ -2,7 +2,7 @@ import { Form as FormikForm } from "formik";
 import styled from "styled-components";
 
 export const Form = styled(FormikForm)`
-  margin-top: 40px;
+  margin-top: 42px;
 `;
 
 export const FieldItem = styled.div`
@@ -28,6 +28,11 @@ export const BottomBlock = styled.div`
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  margin-top: 40px;
+  margin-top: 38px;
   font-size: 11px;
+`;
+
+export const BottomBlockStatusMessage = styled.div`
+  max-width: calc(100% - 100px);
+  color: ${(props) => props.theme.dangerColor};
 `;

@@ -1,1 +1,3 @@
-export * from "./ConnectorCard";
+import ConnectorCard from "./ConnectorCard";
+
+export default ConnectorCard;

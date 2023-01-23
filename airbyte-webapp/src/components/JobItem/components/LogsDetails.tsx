@@ -2,7 +2,8 @@ import React from "react";
 import styled from "styled-components";
 
 import { AttemptRead, JobDebugInfoRead } from "../../../core/request/AirbyteClient";
-import { AttemptDetails } from "./AttemptDetails";
+import AttemptDetails from "./AttemptDetails";
+import DebugInfoButton from "./DebugInfoButton";
 import DownloadButton from "./DownloadButton";
 import { LinkToAttemptButton } from "./LinkToAttemptButton";
 import LogsTable from "./Logs";
@@ -42,7 +43,12 @@ export const LogsDetails: React.FC<{
     <LogHeader>
       <LogPath>{path}</LogPath>
       <LinkToAttemptButton jobId={id} attemptId={currentAttempt?.id} />
-      {jobDebugInfo && <DownloadButton jobDebugInfo={jobDebugInfo} fileName={`logs-${id}`} />}
+      {jobDebugInfo && (
+        <>
+          <DownloadButton jobDebugInfo={jobDebugInfo} fileName={`logs-${id}`} />
+          <DebugInfoButton jobDebugInfo={jobDebugInfo} />
+        </>
+      )}
     </LogHeader>
     <LogsTable logsArray={logs} />
   </>

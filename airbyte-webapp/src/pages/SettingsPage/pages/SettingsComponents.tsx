@@ -1,8 +1,8 @@
 import styled from "styled-components";
 
-import { Card } from "components/ui/Card";
+import { ContentCard } from "components/ContentCard";
 
-export const SettingsCard = styled(Card)`
+export const SettingsCard = styled(ContentCard)`
   width: 100%;
 
   &:not(:first-child) {

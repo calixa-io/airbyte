@@ -1,10 +1,14 @@
-import { SynchronousJobRead } from "./AirbyteClient";
+import { CheckConnectionReadStatus, SynchronousJobRead } from "./AirbyteClient";
 import { CommonRequestError } from "./CommonRequestError";
+
+export interface SynchronousJobReadWithStatus extends SynchronousJobRead {
+  status: CheckConnectionReadStatus;
+}
 
 export class LogsRequestError extends CommonRequestError {
   __type = "common.errorWithLogs";
 
-  constructor(private jobInfo: SynchronousJobRead, msg?: string) {
+  constructor(private jobInfo: SynchronousJobReadWithStatus, msg?: string) {
     super(undefined, msg);
     this._status = 400;
   }

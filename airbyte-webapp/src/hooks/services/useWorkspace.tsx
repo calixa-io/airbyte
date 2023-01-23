@@ -2,6 +2,7 @@ import { useMutation } from "react-query";
 
 import { Action, Namespace } from "core/analytics";
 import { NotificationService } from "core/domain/notification/NotificationService";
+import { DestinationRead, SourceRead } from "core/request/AirbyteClient";
 import { useAnalyticsService } from "hooks/services/Analytics";
 import { useInitService } from "services/useInitService";
 import { useCurrentWorkspace, useUpdateWorkspace } from "services/workspaces/WorkspacesService";
@@ -27,6 +28,41 @@ const useWorkspace = () => {
   const workspace = useCurrentWorkspace();
 
   const analyticsService = useAnalyticsService();
+
+  const finishOnboarding = async (skipStep?: string) => {
+    analyticsService.track(Namespace.ONBOARDING, Action.SKIP, {
+      actionDescription: "Skip Onboarding",
+      step: skipStep,
+    });
+
+    await updateWorkspace({
+      workspaceId: workspace.workspaceId,
+      initialSetupComplete: workspace.initialSetupComplete,
+      anonymousDataCollection: !!workspace.anonymousDataCollection,
+      news: !!workspace.news,
+      securityUpdates: !!workspace.securityUpdates,
+      displaySetupWizard: false,
+    });
+  };
+
+  const sendFeedback = async ({
+    feedback,
+    source,
+    destination,
+  }: {
+    feedback: string;
+    source: SourceRead;
+    destination: DestinationRead;
+  }) => {
+    analyticsService.track(Namespace.ONBOARDING, Action.FEEDBACK, {
+      actionDescription: "Onboarding Feedback",
+      feedback,
+      connector_source_definition: source?.sourceName,
+      connector_source_definition_id: source?.sourceDefinitionId,
+      connector_destination_definition: destination?.destinationName,
+      connector_destination_definition_id: destination?.destinationDefinitionId,
+    });
+  };
 
   const setInitialSetupConfig = async (data: {
     email: string;
@@ -98,10 +134,12 @@ const useWorkspace = () => {
   );
 
   return {
+    finishOnboarding,
     setInitialSetupConfig,
     updatePreferences,
     updateWebhook,
     testWebhook: tryWebhookUrl.mutateAsync,
+    sendFeedback,
   };
 };
 

@@ -11,15 +11,13 @@ import java.math.BigDecimal;
 
 public class JsonUtil {
 
-  private static final String ERROR_MESSAGE = "Can't populate the node type : ";
-
   public static void putBooleanValueIntoJson(final ContainerNode<?> node, final boolean value, final String fieldName) {
     if (node instanceof ArrayNode) {
       ((ArrayNode) node).add(value);
     } else if (node instanceof ObjectNode) {
       ((ObjectNode) node).put(fieldName, value);
     } else {
-      throw new RuntimeException(ERROR_MESSAGE + node.getClass().getName());
+      throw new RuntimeException("Can't populate the node type : " + node.getClass().getName());
     }
   }
 
@@ -29,7 +27,7 @@ public class JsonUtil {
     } else if (node instanceof ObjectNode) {
       ((ObjectNode) node).put(fieldName, value);
     } else {
-      throw new RuntimeException(ERROR_MESSAGE + node.getClass().getName());
+      throw new RuntimeException("Can't populate the node type : " + node.getClass().getName());
     }
   }
 
@@ -39,7 +37,7 @@ public class JsonUtil {
     } else if (node instanceof ObjectNode) {
       ((ObjectNode) node).put(fieldName, value);
     } else {
-      throw new RuntimeException(ERROR_MESSAGE + node.getClass().getName());
+      throw new RuntimeException("Can't populate the node type : " + node.getClass().getName());
     }
   }
 
@@ -49,7 +47,7 @@ public class JsonUtil {
     } else if (node instanceof ObjectNode) {
       ((ObjectNode) node).put(fieldName, value);
     } else {
-      throw new RuntimeException(ERROR_MESSAGE + node.getClass().getName());
+      throw new RuntimeException("Can't populate the node type : " + node.getClass().getName());
     }
   }
 
@@ -59,7 +57,7 @@ public class JsonUtil {
     } else if (node instanceof ObjectNode) {
       ((ObjectNode) node).put(fieldName, value);
     } else {
-      throw new RuntimeException(ERROR_MESSAGE + node.getClass().getName());
+      throw new RuntimeException("Can't populate the node type : " + node.getClass().getName());
     }
   }
 
@@ -69,7 +67,7 @@ public class JsonUtil {
     } else if (node instanceof ObjectNode) {
       ((ObjectNode) node).put(fieldName, value);
     } else {
-      throw new RuntimeException(ERROR_MESSAGE + node.getClass().getName());
+      throw new RuntimeException("Can't populate the node type : " + node.getClass().getName());
     }
   }
 

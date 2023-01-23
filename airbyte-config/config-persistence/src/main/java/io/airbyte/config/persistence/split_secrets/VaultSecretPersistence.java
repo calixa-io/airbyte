@@ -31,9 +31,7 @@ final public class VaultSecretPersistence implements SecretPersistence {
       val response = vault.logical().read(pathPrefix + coordinate.getFullCoordinate());
       val restResponse = response.getRestResponse();
       val responseCode = restResponse.getStatus();
-      final Boolean isErrorResponse = responseCode / 100 != 2;
-
-      if (isErrorResponse) {
+      if (responseCode != 200) {
         log.error("Vault failed on read. Response code: " + responseCode);
         return Optional.empty();
       }

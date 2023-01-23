@@ -16,13 +16,10 @@ import org.junit.jupiter.api.Test;
 
 class ClisTest {
 
-  private static final String ALPHA = "alpha";
-  private static final String BETA = "beta";
-
   @Test
   void testCreateOptionGroup() {
-    final Option optionA = new Option("a", ALPHA);
-    final Option optionB = new Option("b", BETA);
+    final Option optionA = new Option("a", "alpha");
+    final Option optionB = new Option("b", "beta");
     final OptionGroup optionGroupExpected = new OptionGroup();
     optionGroupExpected.addOption(optionA);
     optionGroupExpected.addOption(optionB);
@@ -41,10 +38,10 @@ class ClisTest {
     final Option optionA = Option.builder("a").required(true).hasArg(true).build();
     final Option optionB = Option.builder("b").required(true).hasArg(true).build();
     final Options options = new Options().addOption(optionA).addOption(optionB);
-    final String[] args = {"-a", ALPHA, "-b", BETA};
+    final String[] args = {"-a", "alpha", "-b", "beta"};
     final CommandLine parsed = Clis.parse(args, options, new DefaultParser());
-    assertEquals(ALPHA, parsed.getOptions()[0].getValue());
-    assertEquals(BETA, parsed.getOptions()[1].getValue());
+    assertEquals("alpha", parsed.getOptions()[0].getValue());
+    assertEquals("beta", parsed.getOptions()[1].getValue());
   }
 
   @Test
@@ -52,7 +49,7 @@ class ClisTest {
     final Option optionA = Option.builder("a").required(true).hasArg(true).build();
     final Option optionB = Option.builder("b").required(true).hasArg(true).build();
     final Options options = new Options().addOption(optionA).addOption(optionB);
-    final String[] args = {"-a", ALPHA, "-b", BETA, "-c", "charlie"};
+    final String[] args = {"-a", "alpha", "-b", "beta", "-c", "charlie"};
     assertThrows(IllegalArgumentException.class, () -> Clis.parse(args, options, new DefaultParser()));
   }
 
@@ -61,7 +58,7 @@ class ClisTest {
     final Option optionA = Option.builder("a").required(true).hasArg(true).build();
     final Option optionB = Option.builder("b").required(true).hasArg(true).build();
     final Options options = new Options().addOption(optionA).addOption(optionB);
-    final String[] args = {"-a", ALPHA, "-b", BETA, "-c", "charlie"};
+    final String[] args = {"-a", "alpha", "-b", "beta", "-c", "charlie"};
     assertThrows(IllegalArgumentException.class, () -> Clis.parse(args, options, new DefaultParser(), "search"));
   }
 
@@ -70,10 +67,10 @@ class ClisTest {
     final Option optionA = Option.builder("a").required(true).hasArg(true).build();
     final Option optionB = Option.builder("b").required(true).hasArg(true).build();
     final Options options = new Options().addOption(optionA).addOption(optionB);
-    final String[] args = {"-a", ALPHA, "-b", BETA, "-c", "charlie"};
+    final String[] args = {"-a", "alpha", "-b", "beta", "-c", "charlie"};
     final CommandLine parsed = Clis.parse(args, options, Clis.getRelaxedParser());
-    assertEquals(ALPHA, parsed.getOptions()[0].getValue());
-    assertEquals(BETA, parsed.getOptions()[1].getValue());
+    assertEquals("alpha", parsed.getOptions()[0].getValue());
+    assertEquals("beta", parsed.getOptions()[1].getValue());
   }
 
 }

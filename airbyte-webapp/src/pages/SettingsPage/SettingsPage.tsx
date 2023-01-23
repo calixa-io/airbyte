@@ -1,21 +1,34 @@
 import React, { Suspense } from "react";
 import { FormattedMessage } from "react-intl";
-import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
+import styled from "styled-components";
 
-import { HeadTitle } from "components/common/HeadTitle";
-import { MainPageWithScroll } from "components/common/MainPageWithScroll";
+import HeadTitle from "components/HeadTitle";
 import LoadingPage from "components/LoadingPage";
-import { PageHeader } from "components/ui/PageHeader";
-import { SideMenu, CategoryItem, SideMenuItem } from "components/ui/SideMenu";
+import MainPageWithScroll from "components/MainPageWithScroll";
+import PageTitle from "components/PageTitle";
+import SideMenu from "components/SideMenu";
+import { CategoryItem } from "components/SideMenu/SideMenu";
 
-import { useGetConnectorsOutOfDate } from "hooks/services/useConnector";
+import useConnector from "hooks/services/useConnector";
+import useRouter from "hooks/useRouter";
 
 import AccountPage from "./pages/AccountPage";
 import ConfigurationsPage from "./pages/ConfigurationsPage";
 import { DestinationsPage, SourcesPage } from "./pages/ConnectorsPage";
 import MetricsPage from "./pages/MetricsPage";
 import NotificationPage from "./pages/NotificationPage";
-import styles from "./SettingsPage.module.scss";
+
+const Content = styled.div`
+  margin: 0 33px 0 27px;
+  display: flex;
+  flex-direction: row;
+  padding-bottom: 15px;
+`;
+const MainView = styled.div`
+  width: 100%;
+  margin-left: 47px;
+`;
 
 export interface PageConfig {
   menuConfig: CategoryItem[];
@@ -32,13 +45,11 @@ export const SettingsRoute = {
   Configuration: "configuration",
   Notifications: "notifications",
   Metrics: "metrics",
-  DataResidency: "data-residency",
 } as const;
 
 const SettingsPage: React.FC<SettingsPageProps> = ({ pageConfig }) => {
-  const push = useNavigate();
-  const { pathname } = useLocation();
-  const { countNewSourceVersion, countNewDestinationVersion } = useGetConnectorsOutOfDate();
+  const { push, pathname } = useRouter();
+  const { countNewSourceVersion, countNewDestinationVersion } = useConnector();
 
   const menuItems: CategoryItem[] = pageConfig?.menuConfig || [
     {
@@ -85,20 +96,16 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ pageConfig }) => {
   return (
     <MainPageWithScroll
       headTitle={<HeadTitle titles={[{ id: "sidebar.settings" }]} />}
-      pageTitle={<PageHeader title={<FormattedMessage id="sidebar.settings" />} />}
+      pageTitle={<PageTitle title={<FormattedMessage id="sidebar.settings" />} />}
     >
-      <div className={styles.content}>
+      <Content>
         <SideMenu data={menuItems} onSelect={onSelectMenuItem} activeItem={pathname} />
 
-        <div className={styles.mainView}>
+        <MainView>
           <Suspense fallback={<LoadingPage />}>
             <Routes>
               {menuItems
                 .flatMap((menuItem) => menuItem.routes)
-                .filter(
-                  (menuItem): menuItem is SideMenuItem & { component: NonNullable<SideMenuItem["component"]> } =>
-                    !!menuItem.component
-                )
                 .map(({ path, component: Component }) => (
                   <Route key={path} path={path} element={<Component />} />
                 ))}
@@ -106,8 +113,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ pageConfig }) => {
               <Route path="*" element={<Navigate to={firstRoute} replace />} />
             </Routes>
           </Suspense>
-        </div>
-      </div>
+        </MainView>
+      </Content>
     </MainPageWithScroll>
   );
 };

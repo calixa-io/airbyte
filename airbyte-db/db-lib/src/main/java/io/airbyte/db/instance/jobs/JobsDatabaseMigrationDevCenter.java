@@ -6,11 +6,12 @@ package io.airbyte.db.instance.jobs;
 
 import io.airbyte.db.Database;
 import io.airbyte.db.factory.FlywayFactory;
-import io.airbyte.db.instance.DatabaseConstants;
 import io.airbyte.db.instance.FlywayDatabaseMigrator;
 import io.airbyte.db.instance.development.MigrationDevCenter;
+import java.io.IOException;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
+import org.jooq.DSLContext;
 
 /**
  * Helper class for migration development. See README for details.
@@ -18,12 +19,17 @@ import org.flywaydb.core.Flyway;
 public class JobsDatabaseMigrationDevCenter extends MigrationDevCenter {
 
   public JobsDatabaseMigrationDevCenter() {
-    super("jobs", DatabaseConstants.JOBS_SCHEMA_DUMP_PATH, DatabaseConstants.JOBS_INITIAL_SCHEMA_PATH);
+    super("jobs", "src/main/resources/jobs_database/schema_dump.txt");
   }
 
   @Override
   protected FlywayDatabaseMigrator getMigrator(final Database database, final Flyway flyway) {
     return new JobsDatabaseMigrator(database, flyway);
+  }
+
+  @Override
+  protected Database getDatabase(final DSLContext dslContext) throws IOException {
+    return new Database(dslContext);
   }
 
   @Override

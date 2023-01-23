@@ -21,7 +21,6 @@ import org.junit.jupiter.api.Test;
 class JobsDatabaseMigrationCheckTest {
 
   private static final String CURRENT_VERSION = "1.2.3";
-  private static final String VERSION_2 = "2.0.0";
 
   @Test
   void testMigrationCheck() {
@@ -61,7 +60,7 @@ class JobsDatabaseMigrationCheckTest {
 
   @Test
   void testMigrationCheckTimeout() {
-    final var minimumVersion = VERSION_2;
+    final var minimumVersion = "2.0.0";
     final var currentVersion = CURRENT_VERSION;
     final var migrationVersion = MigrationVersion.fromVersion(currentVersion);
     final var migrationInfo = mock(MigrationInfo.class);
@@ -79,7 +78,7 @@ class JobsDatabaseMigrationCheckTest {
 
   @Test
   void testMigrationCheckNullDatabaseAvailabilityCheck() {
-    final var minimumVersion = VERSION_2;
+    final var minimumVersion = "2.0.0";
     final var currentVersion = CURRENT_VERSION;
     final var migrationVersion = MigrationVersion.fromVersion(currentVersion);
     final var migrationInfo = mock(MigrationInfo.class);
@@ -96,7 +95,7 @@ class JobsDatabaseMigrationCheckTest {
 
   @Test
   void testMigrationCheckNullFlyway() {
-    final var minimumVersion = VERSION_2;
+    final var minimumVersion = "2.0.0";
     final var databaseAvailabilityCheck = mock(JobsDatabaseAvailabilityCheck.class);
     final var check = new JobsDatabaseMigrationCheck(databaseAvailabilityCheck, null, minimumVersion, CommonDatabaseCheckTest.TIMEOUT_MS);
     Assertions.assertThrows(DatabaseCheckException.class, () -> check.check());
@@ -104,7 +103,7 @@ class JobsDatabaseMigrationCheckTest {
 
   @Test
   void unavailableFlywayMigrationVersion() {
-    final var minimumVersion = VERSION_2;
+    final var minimumVersion = "2.0.0";
     final var migrationInfoService = mock(MigrationInfoService.class);
     final var flyway = mock(Flyway.class);
     final var databaseAvailabilityCheck = mock(JobsDatabaseAvailabilityCheck.class);

@@ -4,12 +4,12 @@ import { FormattedMessage, useIntl } from "react-intl";
 import styled from "styled-components";
 import * as yup from "yup";
 
+import { BigButton } from "components/CenteredPageComponents";
 import Label from "components/Label";
 import LabeledInput from "components/LabeledInput";
 import { LabeledSwitch } from "components/LabeledSwitch";
-import { Button } from "components/ui/Button";
 
-import { links } from "utils/links";
+import { useConfig } from "config";
 
 import EditControls from "./components/EditControls";
 
@@ -70,6 +70,7 @@ const PreferencesForm: React.FC<PreferencesFormProps> = ({
   errorMessage,
 }) => {
   const { formatMessage } = useIntl();
+  const config = useConfig();
 
   return (
     <Formik
@@ -82,8 +83,8 @@ const PreferencesForm: React.FC<PreferencesFormProps> = ({
       validateOnBlur
       validateOnChange={false}
       validationSchema={preferencesValidationSchema}
-      onSubmit={(values) => {
-        onSubmit(values);
+      onSubmit={async (values) => {
+        await onSubmit(values);
       }}
     >
       {({ isSubmitting, values, handleChange, setFieldValue, resetForm, isValid, dirty }) => (
@@ -124,7 +125,7 @@ const PreferencesForm: React.FC<PreferencesFormProps> = ({
               id="preferences.collectData"
               values={{
                 docs: (docs: React.ReactNode) => (
-                  <DocsLink target="_blank" href={links.docsLink}>
+                  <DocsLink target="_blank" href={config.links.docsLink}>
                     {docs}
                   </DocsLink>
                 ),
@@ -182,9 +183,9 @@ const PreferencesForm: React.FC<PreferencesFormProps> = ({
             />
           ) : (
             <ButtonContainer>
-              <Button size="lg" type="submit" disabled={isSubmitting}>
+              <BigButton type="submit" disabled={isSubmitting}>
                 <FormattedMessage id="form.continue" />
-              </Button>
+              </BigButton>
             </ButtonContainer>
           )}
         </Form>

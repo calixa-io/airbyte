@@ -1,18 +1,18 @@
 #
-# Copyright (c) 2022 Airbyte, Inc., all rights reserved.
+# Copyright (c) 2021 Airbyte, Inc., all rights reserved.
 #
 
 
 from setuptools import find_packages, setup
 
-MAIN_REQUIREMENTS = ["requests", "ci_common_utils", "click~=8.1.3"]
+MAIN_REQUIREMENTS = ["requests", "ci_common_utils"]
 
-TEST_REQUIREMENTS = ["requests-mock", "pytest"]
+TEST_REQUIREMENTS = ["requests-mock"]
 
 setup(
-    version="1.0.1",
+    version="0.0.0",
     name="ci_credentials",
-    description="CLI tooling to read and manage GSM secrets",
+    description="Load and extract CI secrets for test suites",
     author="Airbyte",
     author_email="contact@airbyte.io",
     packages=find_packages(),
@@ -23,7 +23,7 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "ci_credentials = ci_credentials.main:ci_credentials",
+            "ci_credentials = ci_credentials.main:main",
         ],
     },
 )

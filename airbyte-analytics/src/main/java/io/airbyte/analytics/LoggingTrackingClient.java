@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,21 +34,15 @@ public class LoggingTrackingClient implements TrackingClient {
   }
 
   @Override
-  public void track(@Nullable final UUID workspaceId, final String action) {
+  public void track(final UUID workspaceId, final String action) {
     track(workspaceId, action, Collections.emptyMap());
   }
 
   @Override
-  public void track(@Nullable final UUID workspaceId, final String action, final Map<String, Object> metadata) {
-    String version = null;
-    UUID userId = null;
-    if (workspaceId != null) {
-      version = Optional.ofNullable(identityFetcher.apply(workspaceId).getAirbyteVersion()).map(AirbyteVersion::serialize).orElse(null);
-      userId = identityFetcher.apply(workspaceId).getCustomerId();
-    }
+  public void track(final UUID workspaceId, final String action, final Map<String, Object> metadata) {
     LOGGER.info("track. version: {}, userId: {}, action: {}, metadata: {}",
-        version,
-        userId,
+        Optional.ofNullable(identityFetcher.apply(workspaceId).getAirbyteVersion()).map(AirbyteVersion::serialize).orElse(null),
+        identityFetcher.apply(workspaceId).getCustomerId(),
         action,
         metadata);
   }

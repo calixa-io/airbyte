@@ -5,19 +5,15 @@ tests:
   connection:
     - config_path: "secrets/config.json"
       status: "succeed"
-    - config_path: "secrets/old_config.json"
-      status: "succeed"
-    - config_path: "integration_tests/invalid_time.json"
-      status: "failed"
-    - config_path: "integration_tests/invalid_api_key.json"
+    - config_path: "integration_tests/invalid_config.json"
       status: "failed"
   discovery:
-    - config_path: "secrets/old_config.json"
+    - config_path: "secrets/config.json"
   basic_read:
     - config_path: "secrets/config.json"
       configured_catalog_path: "integration_tests/no_spam_reports_configured_catalog.json"
       expect_records:
-        path: "integration_tests/expected_records.jsonl"
+        path: "integration_tests/expected_records.txt"
         extra_fields: no
         exact_order: no
         extra_records: yes

@@ -97,8 +97,6 @@ class AmazonAdsStream(HttpStream, BasicAmazonAdsStream):
     Class for getting data from streams that based on single http request.
     """
 
-    data_field = ""
-
     def __init__(self, config: Mapping[str, Any], *args, profiles: List[Profile] = None, **kwargs):
         # Each AmazonAdsStream instance are dependant on list of profiles.
         BasicAmazonAdsStream.__init__(self, config, profiles=profiles)
@@ -123,10 +121,7 @@ class AmazonAdsStream(HttpStream, BasicAmazonAdsStream):
         :return an object representing single record in the response
         """
         if response.status_code == HTTPStatus.OK:
-            if self.data_field:
-                yield from response.json().get(self.data_field, [])
-            else:
-                yield from response.json()
+            yield from response.json()
             return
 
         """
@@ -156,7 +151,7 @@ class AmazonAdsStream(HttpStream, BasicAmazonAdsStream):
             response.raise_for_status()
             raise Exception(response.text)
 
-        self.logger.warning(
+        self.logger.warn(
             f"Unexpected error {resp.code} when processing request {response.request.url} for "
             f"{response.request.headers['Amazon-Advertising-API-Scope']} profile: {resp.details}"
         )

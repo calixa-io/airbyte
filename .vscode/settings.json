@@ -8,8 +8,6 @@
   "editor.detectIndentation": true,
   "eslint.format.enable": true,
   "eslint.run": "onType",
-  "stylelint.enable": true,
-  "stylelint.validate": ["css", "scss"],
   "[javascript]": {
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "dbaeumer.vscode-eslint",
@@ -34,12 +32,5 @@
   "[json]": {
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "[scss]": {
-    "editor.formatOnSave": true,
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.codeActionsOnSave": {
-      "source.fixAll.stylelint": true
-    }
   }
 }

@@ -4,7 +4,7 @@
 
 
 from functools import reduce
-from typing import Any, Dict, List, Mapping, Optional, Set, Text, Union
+from typing import Any, List, Mapping, Optional, Set
 
 import pendulum
 from jsonref import JsonRef
@@ -122,23 +122,21 @@ class JsonSchemaHelper:
         return node
 
     def find_nodes(self, keys: List[str]) -> List[List[str]]:
-        """Find all paths that lead to nodes with the specified keys.
+        """Get all nodes of schema that has specifies properties
 
-        :param keys: list of keys
+        :param keys:
         :return: list of json object paths
         """
         variant_paths = []
 
-        def traverse_schema(_schema: Union[Dict[Text, Any], List], path=None):
+        def traverse_schema(_schema, path=None):
             path = path or []
             if path and path[-1] in keys:
                 variant_paths.append(path)
-            if isinstance(_schema, dict):
-                for item in _schema:
-                    traverse_schema(_schema[item], [*path, item])
-            elif isinstance(_schema, list):
-                for i, item in enumerate(_schema):
-                    traverse_schema(_schema[i], [*path, i])
+            for item in _schema:
+                next_obj = _schema[item] if isinstance(_schema, dict) else item
+                if isinstance(next_obj, (list, dict)):
+                    traverse_schema(next_obj, [*path, item])
 
         traverse_schema(self._schema)
         return variant_paths

@@ -4,12 +4,10 @@ import { useConfig } from "config";
 import { SourceDefinitionService } from "core/domain/connector/SourceDefinitionService";
 import { useDefaultRequestMiddlewares } from "services/useDefaultRequestMiddlewares";
 import { useInitService } from "services/useInitService";
-import { useCurrentWorkspaceId } from "services/workspaces/WorkspacesService";
 import { isDefined } from "utils/common";
 
 import { SourceDefinitionCreate, SourceDefinitionRead } from "../../core/request/AirbyteClient";
 import { SCOPE_WORKSPACE } from "../Scope";
-import { connectorDefinitionKeys } from "./ConnectorDefinitions";
 import { useSuspenseQuery } from "./useSuspenseQuery";
 
 export const sourceDefinitionKeys = {
@@ -18,7 +16,7 @@ export const sourceDefinitionKeys = {
   detail: (id: string) => [...sourceDefinitionKeys.all, "details", id] as const,
 };
 
-export function useGetSourceDefinitionService(): SourceDefinitionService {
+function useGetSourceDefinitionService(): SourceDefinitionService {
   const { apiUrl } = useConfig();
 
   const requestAuthMiddleware = useDefaultRequestMiddlewares();
@@ -37,10 +35,9 @@ const useSourceDefinitionList = (): {
   sourceDefinitions: SourceDefinitionReadWithLatestTag[];
 } => {
   const service = useGetSourceDefinitionService();
-  const workspaceId = useCurrentWorkspaceId();
 
   return useSuspenseQuery(sourceDefinitionKeys.lists(), async () => {
-    const [definition, latestDefinition] = await Promise.all([service.list(workspaceId), service.listLatest()]);
+    const [definition, latestDefinition] = await Promise.all([service.list(), service.listLatest()]);
 
     const sourceDefinitions = definition.sourceDefinitions.map((source) => {
       const withLatest = latestDefinition.sourceDefinitions.find(
@@ -58,27 +55,21 @@ const useSourceDefinitionList = (): {
 };
 
 const useSourceDefinition = <T extends string | undefined>(
-  sourceDefinitionId: T
+  id: T
 ): T extends string ? SourceDefinitionRead : SourceDefinitionRead | undefined => {
   const service = useGetSourceDefinitionService();
-  const workspaceId = useCurrentWorkspaceId();
 
-  return useSuspenseQuery(
-    sourceDefinitionKeys.detail(sourceDefinitionId || ""),
-    () => service.get({ workspaceId, sourceDefinitionId: sourceDefinitionId || "" }),
-    {
-      enabled: isDefined(sourceDefinitionId),
-    }
-  );
+  return useSuspenseQuery(sourceDefinitionKeys.detail(id || ""), () => service.get(id || ""), {
+    enabled: isDefined(id),
+  });
 };
 
 const useCreateSourceDefinition = () => {
   const service = useGetSourceDefinitionService();
   const queryClient = useQueryClient();
-  const workspaceId = useCurrentWorkspaceId();
 
   return useMutation<SourceDefinitionRead, Error, SourceDefinitionCreate>(
-    (sourceDefinition) => service.createCustom({ workspaceId, sourceDefinition }),
+    (sourceDefinition) => service.create(sourceDefinition),
     {
       onSuccess: (data) => {
         queryClient.setQueryData(
@@ -115,8 +106,6 @@ const useUpdateSourceDefinition = () => {
             [],
         })
       );
-
-      queryClient.invalidateQueries(connectorDefinitionKeys.count());
     },
   });
 };

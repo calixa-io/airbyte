@@ -6,9 +6,7 @@ package io.airbyte.analytics;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -37,8 +35,6 @@ class SegmentTrackingClientTest {
   private static final TrackingIdentity IDENTITY = new TrackingIdentity(AIRBYTE_VERSION, UUID.randomUUID(), EMAIL, false, false, true);
   private static final UUID WORKSPACE_ID = UUID.randomUUID();
   private static final Function<UUID, TrackingIdentity> MOCK_TRACKING_IDENTITY = (workspaceId) -> IDENTITY;
-  private static final String AIRBYTE_VERSION_KEY = "airbyte_version";
-  private static final String JUMP = "jump";
 
   private Analytics analytics;
   private SegmentTrackingClient segmentTrackingClient;
@@ -65,7 +61,7 @@ class SegmentTrackingClientTest {
     final IdentifyMessage actual = mockBuilder.getValue().build();
     final Map<String, Object> expectedTraits = ImmutableMap.<String, Object>builder()
         .put("anonymized", IDENTITY.isAnonymousDataCollection())
-        .put(AIRBYTE_VERSION_KEY, AIRBYTE_VERSION.serialize())
+        .put("airbyte_version", AIRBYTE_VERSION.serialize())
         .put("deployment_env", DEPLOYMENT.getDeploymentEnv())
         .put("deployment_mode", DEPLOYMENT.getDeploymentMode())
         .put("deployment_id", DEPLOYMENT.getDeploymentId())
@@ -91,7 +87,7 @@ class SegmentTrackingClientTest {
     final IdentifyMessage actual = mockBuilder.getValue().build();
     final Map<String, Object> expectedTraits = ImmutableMap.<String, Object>builder()
         .put("airbyte_role", "role")
-        .put(AIRBYTE_VERSION_KEY, AIRBYTE_VERSION.serialize())
+        .put("airbyte_version", AIRBYTE_VERSION.serialize())
         .put("anonymized", IDENTITY.isAnonymousDataCollection())
         .put("deployment_env", DEPLOYMENT.getDeploymentEnv())
         .put("deployment_mode", DEPLOYMENT.getDeploymentMode())
@@ -108,13 +104,13 @@ class SegmentTrackingClientTest {
   void testTrack() {
     final ArgumentCaptor<TrackMessage.Builder> mockBuilder = ArgumentCaptor.forClass(TrackMessage.Builder.class);
     final ImmutableMap<String, Object> metadata =
-        ImmutableMap.of(AIRBYTE_VERSION_KEY, AIRBYTE_VERSION.serialize(), "user_id", IDENTITY.getCustomerId());
+        ImmutableMap.of("airbyte_version", AIRBYTE_VERSION.serialize(), "user_id", IDENTITY.getCustomerId());
 
-    segmentTrackingClient.track(WORKSPACE_ID, JUMP);
+    segmentTrackingClient.track(WORKSPACE_ID, "jump");
 
     verify(analytics).enqueue(mockBuilder.capture());
     final TrackMessage actual = mockBuilder.getValue().build();
-    assertEquals(JUMP, actual.event());
+    assertEquals("jump", actual.event());
     assertEquals(IDENTITY.getCustomerId().toString(), actual.userId());
     assertEquals(metadata, filterTrackedAtProperty(Objects.requireNonNull(actual.properties())));
   }
@@ -123,33 +119,25 @@ class SegmentTrackingClientTest {
   void testTrackWithMetadata() {
     final ArgumentCaptor<TrackMessage.Builder> mockBuilder = ArgumentCaptor.forClass(TrackMessage.Builder.class);
     final ImmutableMap<String, Object> metadata = ImmutableMap.of(
-        AIRBYTE_VERSION_KEY, AIRBYTE_VERSION.serialize(),
+        "airbyte_version", AIRBYTE_VERSION.serialize(),
         "email", EMAIL,
         "height", "80 meters",
         "user_id", IDENTITY.getCustomerId());
 
-    segmentTrackingClient.track(WORKSPACE_ID, JUMP, metadata);
+    segmentTrackingClient.track(WORKSPACE_ID, "jump", metadata);
 
     verify(analytics).enqueue(mockBuilder.capture());
     final TrackMessage actual = mockBuilder.getValue().build();
-    assertEquals(JUMP, actual.event());
+    assertEquals("jump", actual.event());
     assertEquals(IDENTITY.getCustomerId().toString(), actual.userId());
     assertEquals(metadata, filterTrackedAtProperty(Objects.requireNonNull(actual.properties())));
   }
 
-  @Test
-  void testTrackNullWorkspace() {
-    segmentTrackingClient.track(null, JUMP);
-
-    verify(analytics, never()).enqueue(any());
-  }
-
   private static ImmutableMap<String, Object> filterTrackedAtProperty(final Map<String, ?> properties) {
-    final String trackedAtKey = "tracked_at";
-    assertTrue(properties.containsKey(trackedAtKey));
+    assertTrue(properties.containsKey("tracked_at"));
     final Builder<String, Object> builder = ImmutableMap.builder();
     properties.forEach((key, value) -> {
-      if (!trackedAtKey.equals(key)) {
+      if (!"tracked_at".equals(key)) {
         builder.put(key, value);
       }
     });

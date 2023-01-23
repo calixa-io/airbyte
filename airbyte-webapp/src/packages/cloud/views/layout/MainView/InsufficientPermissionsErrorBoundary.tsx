@@ -13,7 +13,7 @@ const initialState: BoundaryState = {
 };
 
 export class InsufficientPermissionsErrorBoundary extends React.Component<
-  React.PropsWithChildren<{ errorComponent: React.ReactElement }>,
+  { errorComponent: React.ReactElement },
   BoundaryState
 > {
   static getDerivedStateFromError(error: CommonRequestError): BoundaryState {

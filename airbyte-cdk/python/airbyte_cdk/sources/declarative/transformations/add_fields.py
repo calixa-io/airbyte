@@ -13,7 +13,7 @@ from dataclasses_jsonschema import JsonSchemaMixin
 
 
 @dataclass(frozen=True)
-class AddedFieldDefinition(JsonSchemaMixin):
+class AddedFieldDefinition:
     """Defines the field to add on a record"""
 
     path: FieldPointer
@@ -22,7 +22,7 @@ class AddedFieldDefinition(JsonSchemaMixin):
 
 
 @dataclass(frozen=True)
-class ParsedAddFieldDefinition(JsonSchemaMixin):
+class ParsedAddFieldDefinition:
     """Defines the field to add on a record"""
 
     path: FieldPointer

@@ -17,9 +17,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
-import javax.annotation.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * This class is a wrapper around the Segment backend Java SDK.
@@ -42,8 +39,6 @@ import org.slf4j.LoggerFactory;
  * https://docs.google.com/spreadsheets/d/1lGLmLIhiSPt_-oaEf3CpK-IxXnCO0NRHurvmWldoA2w/edit#gid=1567609168
  */
 public class SegmentTrackingClient implements TrackingClient {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(SegmentTrackingClient.class);
 
   public static final String CUSTOMER_ID_KEY = "user_id";
   private static final String SEGMENT_WRITE_KEY = "7UDdp5K55CyiGgsauOr2pNNujGvmhaeu";
@@ -111,16 +106,12 @@ public class SegmentTrackingClient implements TrackingClient {
   }
 
   @Override
-  public void track(@Nullable final UUID workspaceId, final String action) {
+  public void track(final UUID workspaceId, final String action) {
     track(workspaceId, action, Collections.emptyMap());
   }
 
   @Override
-  public void track(@Nullable final UUID workspaceId, final String action, final Map<String, Object> metadata) {
-    if (workspaceId == null) {
-      LOGGER.error("Could not track action {} due to null workspaceId", action);
-      return;
-    }
+  public void track(final UUID workspaceId, final String action, final Map<String, Object> metadata) {
     final Map<String, Object> mapCopy = new HashMap<>(metadata);
     final TrackingIdentity trackingIdentity = identityFetcher.apply(workspaceId);
 

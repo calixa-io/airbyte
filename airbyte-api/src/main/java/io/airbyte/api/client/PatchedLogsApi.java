@@ -75,7 +75,7 @@ public class PatchedLogsApi {
       if (memberVarResponseInterceptor != null) {
         memberVarResponseInterceptor.accept(localVarResponse);
       }
-      if (isErrorResponse(localVarResponse)) {
+      if (localVarResponse.statusCode() / 100 != 2) {
         throw new ApiException(localVarResponse.statusCode(),
             "getLogs call received non-success response",
             localVarResponse.headers(),
@@ -98,10 +98,6 @@ public class PatchedLogsApi {
       Thread.currentThread().interrupt();
       throw new ApiException(e);
     }
-  }
-
-  private Boolean isErrorResponse(final HttpResponse<InputStream> httpResponse) {
-    return httpResponse.statusCode() / 100 != 2;
   }
 
   private HttpRequest.Builder getLogsRequestBuilder(final LogsRequestBody logsRequestBody) throws ApiException {

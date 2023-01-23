@@ -2,15 +2,13 @@
 # Copyright (c) 2022 Airbyte, Inc., all rights reserved.
 #
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Mapping
 
-from dataclasses_jsonschema import JsonSchemaMixin
-
 
 @dataclass
-class SchemaLoader(JsonSchemaMixin):
+class SchemaLoader(ABC):
     """Describes a stream's schema"""
 
     @abstractmethod

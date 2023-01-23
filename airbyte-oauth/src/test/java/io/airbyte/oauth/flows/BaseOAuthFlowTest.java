@@ -34,12 +34,6 @@ import org.junit.jupiter.api.Test;
 public abstract class BaseOAuthFlowTest {
 
   private static final String REDIRECT_URL = "https://airbyte.io";
-  private static final String REFRESH_TOKEN = "refresh_token";
-  private static final String CLIENT_ID = "client_id";
-  private static final String TYPE = "type";
-  private static final String CODE = "code";
-  private static final String TEST_CODE = "test_code";
-  private static final String EXPECTED_BUT_GOT = "Expected %s values but got\n\t%s\ninstead of\n\t%s";
 
   private HttpClient httpClient;
   private ConfigRepository configRepository;
@@ -99,8 +93,8 @@ public abstract class BaseOAuthFlowTest {
    */
   protected Map<String, String> getExpectedOutput() {
     return Map.of(
-        REFRESH_TOKEN, "refresh_token_response",
-        CLIENT_ID, MoreOAuthParameters.SECRET_MASK,
+        "refresh_token", "refresh_token_response",
+        "client_id", MoreOAuthParameters.SECRET_MASK,
         "client_secret", MoreOAuthParameters.SECRET_MASK);
   }
 
@@ -111,7 +105,7 @@ public abstract class BaseOAuthFlowTest {
    * @return the output specification used to identify what the oauth flow should be returning
    */
   protected JsonNode getCompleteOAuthOutputSpecification() {
-    return getJsonSchema(Map.of(REFRESH_TOKEN, Map.of(TYPE, "string")));
+    return getJsonSchema(Map.of("refresh_token", Map.of("type", "string")));
   }
 
   /**
@@ -122,15 +116,15 @@ public abstract class BaseOAuthFlowTest {
    */
   protected Map<String, String> getExpectedFilteredOutput() {
     return Map.of(
-        REFRESH_TOKEN, "refresh_token_response",
-        CLIENT_ID, MoreOAuthParameters.SECRET_MASK);
+        "refresh_token", "refresh_token_response",
+        "client_id", MoreOAuthParameters.SECRET_MASK);
   }
 
   /**
    * @return the output specification used to filter what the oauth flow should be returning
    */
   protected JsonNode getCompleteOAuthServerOutputSpecification() {
-    return getJsonSchema(Map.of(CLIENT_ID, Map.of(TYPE, "string")));
+    return getJsonSchema(Map.of("client_id", Map.of("type", "string")));
   }
 
   /**
@@ -174,14 +168,14 @@ public abstract class BaseOAuthFlowTest {
    */
   protected JsonNode getOAuthParamConfig() {
     return Jsons.jsonNode(ImmutableMap.builder()
-        .put(CLIENT_ID, "test_client_id")
+        .put("client_id", "test_client_id")
         .put("client_secret", "test_client_secret")
         .build());
   }
 
   protected static JsonNode getJsonSchema(final Map<String, Object> properties) {
     return Jsons.jsonNode(Map.of(
-        TYPE, "object",
+        "type", "object",
         "additionalProperties", "false",
         "properties", properties));
   }
@@ -211,8 +205,8 @@ public abstract class BaseOAuthFlowTest {
   protected OAuthConfigSpecification getOAuthConfigSpecification() {
     return getoAuthConfigSpecification()
         // change property types to induce json validation errors.
-        .withCompleteOauthServerOutputSpecification(getJsonSchema(Map.of(CLIENT_ID, Map.of(TYPE, "integer"))))
-        .withCompleteOauthOutputSpecification(getJsonSchema(Map.of(REFRESH_TOKEN, Map.of(TYPE, "integer"))));
+        .withCompleteOauthServerOutputSpecification(getJsonSchema(Map.of("client_id", Map.of("type", "integer"))))
+        .withCompleteOauthOutputSpecification(getJsonSchema(Map.of("refresh_token", Map.of("type", "integer"))));
   }
 
   @Test
@@ -311,7 +305,7 @@ public abstract class BaseOAuthFlowTest {
     final HttpResponse response = mock(HttpResponse.class);
     when(response.body()).thenReturn(Jsons.serialize(returnedCredentials));
     when(httpClient.send(any(), any())).thenReturn(response);
-    final Map<String, Object> queryParams = Map.of(CODE, TEST_CODE);
+    final Map<String, Object> queryParams = Map.of("code", "test_code");
 
     if (hasDependencyOnConnectorConfigValues()) {
       assertThrows(IOException.class, () -> oauthFlow.completeSourceOAuth(workspaceId, definitionId, queryParams, REDIRECT_URL),
@@ -325,7 +319,7 @@ public abstract class BaseOAuthFlowTest {
       final Map<String, String> expectedOutput = returnedCredentials;
       final Map<String, Object> actualQueryParams = actualRawQueryParams;
       assertEquals(expectedOutput.size(), actualQueryParams.size(),
-          String.format(EXPECTED_BUT_GOT, expectedOutput.size(), actualQueryParams, expectedOutput));
+          String.format("Expected %s values but got\n\t%s\ninstead of\n\t%s", expectedOutput.size(), actualQueryParams, expectedOutput));
       expectedOutput.forEach((key, value) -> assertEquals(value, actualQueryParams.get(key)));
     }
   }
@@ -336,7 +330,7 @@ public abstract class BaseOAuthFlowTest {
     final HttpResponse response = mock(HttpResponse.class);
     when(response.body()).thenReturn(Jsons.serialize(returnedCredentials));
     when(httpClient.send(any(), any())).thenReturn(response);
-    final Map<String, Object> queryParams = Map.of(CODE, TEST_CODE);
+    final Map<String, Object> queryParams = Map.of("code", "test_code");
 
     if (hasDependencyOnConnectorConfigValues()) {
       assertThrows(IOException.class, () -> oauthFlow.completeDestinationOAuth(workspaceId, definitionId, queryParams, REDIRECT_URL),
@@ -350,7 +344,7 @@ public abstract class BaseOAuthFlowTest {
       final Map<String, String> expectedOutput = returnedCredentials;
       final Map<String, Object> actualQueryParams = actualRawQueryParams;
       assertEquals(expectedOutput.size(), actualQueryParams.size(),
-          String.format(EXPECTED_BUT_GOT, expectedOutput.size(), actualQueryParams, expectedOutput));
+          String.format("Expected %s values but got\n\t%s\ninstead of\n\t%s", expectedOutput.size(), actualQueryParams, expectedOutput));
       expectedOutput.forEach((key, value) -> assertEquals(value, actualQueryParams.get(key)));
     }
   }
@@ -360,7 +354,7 @@ public abstract class BaseOAuthFlowTest {
     final HttpResponse response = mock(HttpResponse.class);
     when(response.body()).thenReturn(getMockedResponse());
     when(httpClient.send(any(), any())).thenReturn(response);
-    final Map<String, Object> queryParams = Map.of(CODE, TEST_CODE);
+    final Map<String, Object> queryParams = Map.of("code", "test_code");
     final Map<String, Object> actualQueryParams = oauthFlow.completeSourceOAuth(workspaceId, definitionId, queryParams, REDIRECT_URL,
         getInputOAuthConfiguration(), getEmptyOAuthConfigSpecification());
     assertEquals(0, actualQueryParams.size(),
@@ -372,7 +366,7 @@ public abstract class BaseOAuthFlowTest {
     final HttpResponse response = mock(HttpResponse.class);
     when(response.body()).thenReturn(getMockedResponse());
     when(httpClient.send(any(), any())).thenReturn(response);
-    final Map<String, Object> queryParams = Map.of(CODE, TEST_CODE);
+    final Map<String, Object> queryParams = Map.of("code", "test_code");
     final Map<String, Object> actualQueryParams = oauthFlow.completeDestinationOAuth(workspaceId, definitionId, queryParams, REDIRECT_URL,
         getInputOAuthConfiguration(), getEmptyOAuthConfigSpecification());
     assertEquals(0, actualQueryParams.size(),
@@ -384,12 +378,12 @@ public abstract class BaseOAuthFlowTest {
     final HttpResponse response = mock(HttpResponse.class);
     when(response.body()).thenReturn(getMockedResponse());
     when(httpClient.send(any(), any())).thenReturn(response);
-    final Map<String, Object> queryParams = Map.of(CODE, TEST_CODE);
+    final Map<String, Object> queryParams = Map.of("code", "test_code");
     final Map<String, Object> actualQueryParams = oauthFlow.completeSourceOAuth(workspaceId, definitionId, queryParams, REDIRECT_URL,
         Jsons.emptyObject(), getoAuthConfigSpecification());
     final Map<String, String> expectedOutput = getExpectedFilteredOutput();
     assertEquals(expectedOutput.size(), actualQueryParams.size(),
-        String.format(EXPECTED_BUT_GOT, expectedOutput.size(), actualQueryParams, expectedOutput));
+        String.format("Expected %s values but got\n\t%s\ninstead of\n\t%s", expectedOutput.size(), actualQueryParams, expectedOutput));
     expectedOutput.forEach((key, value) -> assertEquals(value, actualQueryParams.get(key)));
   }
 
@@ -398,12 +392,12 @@ public abstract class BaseOAuthFlowTest {
     final HttpResponse response = mock(HttpResponse.class);
     when(response.body()).thenReturn(getMockedResponse());
     when(httpClient.send(any(), any())).thenReturn(response);
-    final Map<String, Object> queryParams = Map.of(CODE, TEST_CODE);
+    final Map<String, Object> queryParams = Map.of("code", "test_code");
     final Map<String, Object> actualQueryParams = oauthFlow.completeDestinationOAuth(workspaceId, definitionId, queryParams, REDIRECT_URL,
         Jsons.emptyObject(), getoAuthConfigSpecification());
     final Map<String, String> expectedOutput = getExpectedFilteredOutput();
     assertEquals(expectedOutput.size(), actualQueryParams.size(),
-        String.format(EXPECTED_BUT_GOT, expectedOutput.size(), actualQueryParams, expectedOutput));
+        String.format("Expected %s values but got\n\t%s\ninstead of\n\t%s", expectedOutput.size(), actualQueryParams, expectedOutput));
     expectedOutput.forEach((key, value) -> assertEquals(value, actualQueryParams.get(key)));
   }
 
@@ -412,12 +406,12 @@ public abstract class BaseOAuthFlowTest {
     final HttpResponse response = mock(HttpResponse.class);
     when(response.body()).thenReturn(getMockedResponse());
     when(httpClient.send(any(), any())).thenReturn(response);
-    final Map<String, Object> queryParams = Map.of(CODE, TEST_CODE);
+    final Map<String, Object> queryParams = Map.of("code", "test_code");
     final Map<String, Object> actualQueryParams = oauthFlow.completeSourceOAuth(workspaceId, definitionId, queryParams, REDIRECT_URL,
         getInputOAuthConfiguration(), getoAuthConfigSpecification());
     final Map<String, String> expectedOutput = getExpectedFilteredOutput();
     assertEquals(expectedOutput.size(), actualQueryParams.size(),
-        String.format(EXPECTED_BUT_GOT, expectedOutput.size(), actualQueryParams, expectedOutput));
+        String.format("Expected %s values but got\n\t%s\ninstead of\n\t%s", expectedOutput.size(), actualQueryParams, expectedOutput));
     expectedOutput.forEach((key, value) -> assertEquals(value, actualQueryParams.get(key)));
   }
 
@@ -426,12 +420,12 @@ public abstract class BaseOAuthFlowTest {
     final HttpResponse response = mock(HttpResponse.class);
     when(response.body()).thenReturn(getMockedResponse());
     when(httpClient.send(any(), any())).thenReturn(response);
-    final Map<String, Object> queryParams = Map.of(CODE, TEST_CODE);
+    final Map<String, Object> queryParams = Map.of("code", "test_code");
     final Map<String, Object> actualQueryParams = oauthFlow.completeDestinationOAuth(workspaceId, definitionId, queryParams, REDIRECT_URL,
         getInputOAuthConfiguration(), getoAuthConfigSpecification());
     final Map<String, String> expectedOutput = getExpectedFilteredOutput();
     assertEquals(expectedOutput.size(), actualQueryParams.size(),
-        String.format(EXPECTED_BUT_GOT, expectedOutput.size(), actualQueryParams, expectedOutput));
+        String.format("Expected %s values but got\n\t%s\ninstead of\n\t%s", expectedOutput.size(), actualQueryParams, expectedOutput));
     expectedOutput.forEach((key, value) -> assertEquals(value, actualQueryParams.get(key)));
   }
 
@@ -440,7 +434,7 @@ public abstract class BaseOAuthFlowTest {
     final HttpResponse response = mock(HttpResponse.class);
     when(response.body()).thenReturn(getMockedResponse());
     when(httpClient.send(any(), any())).thenReturn(response);
-    final Map<String, Object> queryParams = Map.of(CODE, TEST_CODE);
+    final Map<String, Object> queryParams = Map.of("code", "test_code");
     final OAuthConfigSpecification oAuthConfigSpecification = getOAuthConfigSpecification();
     assertThrows(JsonValidationException.class, () -> oauthFlow.completeSourceOAuth(workspaceId, definitionId, queryParams, REDIRECT_URL,
         getInputOAuthConfiguration(), oAuthConfigSpecification));

@@ -20,14 +20,16 @@ import io.airbyte.commons.json.Jsons;
 import io.airbyte.commons.resources.MoreResources;
 import io.airbyte.config.ConnectorJobOutput;
 import io.airbyte.config.ConnectorJobOutput.OutputType;
+import io.airbyte.config.EnvConfigs;
 import io.airbyte.config.FailureReason;
 import io.airbyte.config.JobGetSpecConfig;
 import io.airbyte.protocol.models.AirbyteMessage;
 import io.airbyte.protocol.models.AirbyteMessage.Type;
 import io.airbyte.protocol.models.ConnectorSpecification;
+import io.airbyte.workers.WorkerConfigs;
 import io.airbyte.workers.exception.WorkerException;
+import io.airbyte.workers.internal.AirbyteMessageUtils;
 import io.airbyte.workers.process.IntegrationLauncher;
-import io.airbyte.workers.test_utils.AirbyteMessageUtils;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -39,7 +41,6 @@ class DefaultGetSpecWorkerTest {
 
   private static final Path TEST_ROOT = Path.of("/tmp/airbyte_tests");
   private static final String DUMMY_IMAGE_NAME = "airbyte/notarealimage:1.1";
-  private static final String ERROR_MESSAGE = "some error from the connector";
 
   private DefaultGetSpecWorker worker;
   private IntegrationLauncher integrationLauncher;
@@ -56,7 +57,7 @@ class DefaultGetSpecWorkerTest {
     when(process.getErrorStream()).thenReturn(new ByteArrayInputStream(new byte[0]));
     when(integrationLauncher.spec(jobRoot)).thenReturn(process);
 
-    worker = new DefaultGetSpecWorker(integrationLauncher);
+    worker = new DefaultGetSpecWorker(new WorkerConfigs(new EnvConfigs()), integrationLauncher);
   }
 
   @Test
@@ -79,66 +80,47 @@ class DefaultGetSpecWorkerTest {
   }
 
   @Test
-  void testFailureOnInvalidSpecAndNoFailureReason() throws InterruptedException {
+  void testFailureOnInvalidSpec() throws InterruptedException {
     final String expectedSpecString = "{\"key\":\"value\"}";
     when(process.getInputStream()).thenReturn(new ByteArrayInputStream(expectedSpecString.getBytes(Charsets.UTF_8)));
     when(process.waitFor(anyLong(), any())).thenReturn(true);
+    when(process.exitValue()).thenReturn(0);
 
     assertThatThrownBy(() -> worker.run(config, jobRoot))
         .isInstanceOf(WorkerException.class)
         .getCause()
         .isInstanceOf(WorkerException.class)
-        .hasMessageContaining("Integration failed to output a spec struct and did not output a failure reason")
+        .hasMessageContaining("integration failed to output a spec struct.")
         .hasNoCause();
   }
 
   @Test
-  void testWithInvalidSpecAndFailureReason() throws InterruptedException, WorkerException {
-    final String expectedSpecString = "{\"key\":\"value\"}";
-
-    final AirbyteMessage message = new AirbyteMessage()
-        .withType(Type.SPEC)
-        .withSpec(Jsons.deserialize(expectedSpecString, io.airbyte.protocol.models.ConnectorSpecification.class));
-    final AirbyteMessage traceMessage = AirbyteMessageUtils.createErrorMessage(ERROR_MESSAGE, 123.0);
-
-    when(process.getInputStream())
-        .thenReturn(new ByteArrayInputStream((Jsons.serialize(message) + "\n" + Jsons.serialize(traceMessage)).getBytes(Charsets.UTF_8)));
-    when(process.waitFor(anyLong(), any())).thenReturn(true);
-
-    final ConnectorJobOutput output = worker.run(config, jobRoot);
-    assertEquals(OutputType.SPEC, output.getOutputType());
-    assertNull(output.getSpec());
-
-    final FailureReason failureReason = output.getFailureReason();
-    assertEquals(ERROR_MESSAGE, failureReason.getExternalMessage());
-  }
-
-  @Test
-  void testWithValidSpecAndFailureReason() throws InterruptedException, WorkerException, IOException {
+  void testFailureOnNonzeroExitCode() throws InterruptedException, IOException {
     final String expectedSpecString = MoreResources.readResource("valid_spec.json");
 
     final AirbyteMessage message = new AirbyteMessage()
         .withType(Type.SPEC)
         .withSpec(Jsons.deserialize(expectedSpecString, io.airbyte.protocol.models.ConnectorSpecification.class));
-    final AirbyteMessage traceMessage = AirbyteMessageUtils.createErrorMessage(ERROR_MESSAGE, 123.0);
-
-    when(process.getInputStream())
-        .thenReturn(new ByteArrayInputStream((Jsons.serialize(message) + "\n" + Jsons.serialize(traceMessage)).getBytes(Charsets.UTF_8)));
-    when(process.waitFor(anyLong(), any())).thenReturn(true);
-
-    final ConnectorJobOutput output = worker.run(config, jobRoot);
-    assertEquals(OutputType.SPEC, output.getOutputType());
-    assertEquals(output.getSpec(), Jsons.deserialize(expectedSpecString, ConnectorSpecification.class));
-    final FailureReason failureReason = output.getFailureReason();
-    assertEquals(ERROR_MESSAGE, failureReason.getExternalMessage());
-  }
-
-  @Test
-  void testFailureReasonWithTraceMessageOnly() throws WorkerException, InterruptedException {
-    final AirbyteMessage message = AirbyteMessageUtils.createErrorMessage(ERROR_MESSAGE, 123.0);
 
     when(process.getInputStream()).thenReturn(new ByteArrayInputStream(Jsons.serialize(message).getBytes(Charsets.UTF_8)));
     when(process.waitFor(anyLong(), any())).thenReturn(true);
+    when(process.exitValue()).thenReturn(1);
+
+    assertThatThrownBy(() -> worker.run(config, jobRoot))
+        .isInstanceOf(WorkerException.class)
+        .getCause()
+        .isInstanceOf(WorkerException.class)
+        .hasMessageContaining("Spec job subprocess finished with exit code")
+        .hasNoCause();
+  }
+
+  @Test
+  void testFailureOnNonzeroExitCodeWithTraceMessage() throws WorkerException, InterruptedException {
+    final AirbyteMessage message = AirbyteMessageUtils.createTraceMessage("some error from the connector", 123.0);
+
+    when(process.getInputStream()).thenReturn(new ByteArrayInputStream(Jsons.serialize(message).getBytes(Charsets.UTF_8)));
+    when(process.waitFor(anyLong(), any())).thenReturn(true);
+    when(process.exitValue()).thenReturn(1);
 
     final ConnectorJobOutput output = worker.run(config, jobRoot);
     assertEquals(OutputType.SPEC, output.getOutputType());
@@ -146,7 +128,7 @@ class DefaultGetSpecWorkerTest {
     assertNotNull(output.getFailureReason());
 
     final FailureReason failureReason = output.getFailureReason();
-    assertEquals(ERROR_MESSAGE, failureReason.getExternalMessage());
+    assertEquals("some error from the connector", failureReason.getExternalMessage());
   }
 
 }

@@ -1,18 +1,19 @@
 import React, { useMemo } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
-import { components, MenuListProps } from "react-select";
+import { components } from "react-select";
+import { MenuListComponentProps } from "react-select/src/components/Menu";
 import styled from "styled-components";
 
-import { DropDownOptionDataItem } from "components/ui/DropDown";
-import { Popout } from "components/ui/Popout";
+import { Popout } from "components";
+import { IDataItem } from "components/base/DropDown/components/Option";
 
-import { useListCloudWorkspacesAsync } from "packages/cloud/services/workspaces/CloudWorkspacesService";
-import { useCurrentWorkspace, useWorkspaceService } from "services/workspaces/WorkspacesService";
+import { useWorkspaceService, useListCloudWorkspacesAsync } from "packages/cloud/services/workspaces/WorkspacesService";
+import { useCurrentWorkspace } from "services/workspaces/WorkspacesService";
 
 import ExitIcon from "./components/ExitIcon";
 
 const BottomElement = styled.div`
-  background: ${(props) => props.theme.greyColor0};
+  background: ${(props) => props.theme.greyColro0};
   padding: 12px 16px 12px;
   width: 100%;
   min-height: 34px;
@@ -66,15 +67,11 @@ const List = styled.div`
   }
 `;
 
-type MenuWithRequestButtonProps = MenuListProps<DropDownOptionDataItem, boolean> & {
+type MenuWithRequestButtonProps = MenuListComponentProps<IDataItem, false> & {
   selectedWorkspace: string;
 };
 
-const WorkspacesList: React.FC<React.PropsWithChildren<MenuWithRequestButtonProps>> = ({
-  children,
-  selectedWorkspace,
-  ...props
-}) => {
+const WorkspacesList: React.FC<MenuWithRequestButtonProps> = ({ children, selectedWorkspace, ...props }) => {
   const { exitWorkspace } = useWorkspaceService();
 
   return (

@@ -1,17 +1,13 @@
 @use "../../../../../scss/colors";
-@use "../../../../../scss/variables";
-
-.container {
-  display: flex;
-  flex-direction: column;
-  gap: variables.$spacing-xl;
-}
 
 .title {
+  font-weight: 700;
+  font-size: 32px;
+  line-height: 39px;
   width: 250px;
-  margin-bottom: variables.$spacing-md;
+  color: colors.$dark-blue-900;
 }
 
 .highlight {
-  color: colors.$blue;
+  color: colors.$blue-400;
 }

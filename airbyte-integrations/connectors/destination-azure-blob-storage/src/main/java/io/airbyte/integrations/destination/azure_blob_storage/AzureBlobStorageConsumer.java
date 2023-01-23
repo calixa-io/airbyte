@@ -9,17 +9,17 @@ import com.azure.storage.blob.specialized.AppendBlobClient;
 import com.azure.storage.blob.specialized.SpecializedBlobClientBuilder;
 import com.azure.storage.common.StorageSharedKeyCredential;
 import io.airbyte.commons.json.Jsons;
+import io.airbyte.integrations.base.AirbyteStreamNameNamespacePair;
 import io.airbyte.integrations.base.FailureTrackingAirbyteMessageConsumer;
 import io.airbyte.integrations.destination.azure_blob_storage.writer.AzureBlobStorageWriter;
 import io.airbyte.integrations.destination.azure_blob_storage.writer.AzureBlobStorageWriterFactory;
-import io.airbyte.protocol.models.v0.AirbyteMessage;
-import io.airbyte.protocol.models.v0.AirbyteMessage.Type;
-import io.airbyte.protocol.models.v0.AirbyteRecordMessage;
-import io.airbyte.protocol.models.v0.AirbyteStream;
-import io.airbyte.protocol.models.v0.AirbyteStreamNameNamespacePair;
-import io.airbyte.protocol.models.v0.ConfiguredAirbyteCatalog;
-import io.airbyte.protocol.models.v0.ConfiguredAirbyteStream;
-import io.airbyte.protocol.models.v0.DestinationSyncMode;
+import io.airbyte.protocol.models.AirbyteMessage;
+import io.airbyte.protocol.models.AirbyteMessage.Type;
+import io.airbyte.protocol.models.AirbyteRecordMessage;
+import io.airbyte.protocol.models.AirbyteStream;
+import io.airbyte.protocol.models.ConfiguredAirbyteCatalog;
+import io.airbyte.protocol.models.ConfiguredAirbyteStream;
+import io.airbyte.protocol.models.DestinationSyncMode;
 import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -45,10 +45,10 @@ public class AzureBlobStorageConsumer extends FailureTrackingAirbyteMessageConsu
   private final Map<AirbyteStreamNameNamespacePair, AzureBlobStorageWriter> streamNameAndNamespaceToWriters;
 
   public AzureBlobStorageConsumer(
-                                  final AzureBlobStorageDestinationConfig azureBlobStorageDestinationConfig,
-                                  final ConfiguredAirbyteCatalog configuredCatalog,
-                                  final AzureBlobStorageWriterFactory writerFactory,
-                                  final Consumer<AirbyteMessage> outputRecordCollector) {
+      final AzureBlobStorageDestinationConfig azureBlobStorageDestinationConfig,
+      final ConfiguredAirbyteCatalog configuredCatalog,
+      final AzureBlobStorageWriterFactory writerFactory,
+      final Consumer<AirbyteMessage> outputRecordCollector) {
     this.azureBlobStorageDestinationConfig = azureBlobStorageDestinationConfig;
     this.configuredCatalog = configuredCatalog;
     this.writerFactory = writerFactory;
@@ -85,14 +85,14 @@ public class AzureBlobStorageConsumer extends FailureTrackingAirbyteMessageConsu
 
       final AirbyteStream stream = configuredStream.getStream();
       final AirbyteStreamNameNamespacePair streamNamePair = AirbyteStreamNameNamespacePair
-          .fromAirbyteStream(stream);
+          .fromAirbyteSteam(stream);
       streamNameAndNamespaceToWriters.put(streamNamePair, writer);
     }
   }
 
   private void createContainers(final SpecializedBlobClientBuilder specializedBlobClientBuilder,
-                                final AppendBlobClient appendBlobClient,
-                                final ConfiguredAirbyteStream configuredStream) {
+      final AppendBlobClient appendBlobClient,
+      final ConfiguredAirbyteStream configuredStream) {
     // create container if absent (aka SQl Schema)
     final BlobContainerClient containerClient = appendBlobClient.getContainerClient();
     if (!containerClient.exists()) {
@@ -101,7 +101,7 @@ public class AzureBlobStorageConsumer extends FailureTrackingAirbyteMessageConsu
     if (DestinationSyncMode.OVERWRITE.equals(configuredStream.getDestinationSyncMode())) {
       LOGGER.info("Sync mode is selected to OVERRIDE mode. New container will be automatically"
           + " created or all data would be overridden (if any) for stream:" + configuredStream
-              .getStream().getName());
+          .getStream().getName());
       var blobItemList = StreamSupport.stream(containerClient.listBlobs().spliterator(), false)
           .collect(Collectors.toList());
       blobItemList.forEach(blob -> {

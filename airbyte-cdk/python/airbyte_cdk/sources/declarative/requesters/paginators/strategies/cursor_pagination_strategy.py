@@ -21,7 +21,6 @@ class CursorPaginationStrategy(PaginationStrategy, JsonSchemaMixin):
     Pagination strategy that evaluates an interpolated string to define the next page token
 
     Attributes:
-        page_size (Optional[int]): the number of records to request
         cursor_value (Union[InterpolatedString, str]): template string evaluating to the cursor value
         config (Config): connection config
         stop_condition (Optional[InterpolatedBoolean]): template string evaluating when to stop paginating
@@ -31,15 +30,12 @@ class CursorPaginationStrategy(PaginationStrategy, JsonSchemaMixin):
     cursor_value: Union[InterpolatedString, str]
     config: Config
     options: InitVar[Mapping[str, Any]]
-    page_size: Optional[int] = None
-    stop_condition: Optional[Union[InterpolatedBoolean, str]] = None
+    stop_condition: Optional[InterpolatedBoolean] = None
     decoder: Decoder = JsonDecoder(options={})
 
     def __post_init__(self, options: Mapping[str, Any]):
         if isinstance(self.cursor_value, str):
             self.cursor_value = InterpolatedString.create(self.cursor_value, options=options)
-        if isinstance(self.stop_condition, str):
-            self.stop_condition = InterpolatedBoolean(condition=self.stop_condition, options=options)
 
     def next_page_token(self, response: requests.Response, last_records: List[Mapping[str, Any]]) -> Optional[Any]:
         decoded_response = self.decoder.decode(response)
@@ -59,6 +55,3 @@ class CursorPaginationStrategy(PaginationStrategy, JsonSchemaMixin):
     def reset(self):
         # No state to reset
         pass
-
-    def get_page_size(self) -> Optional[int]:
-        return self.page_size

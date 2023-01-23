@@ -7,11 +7,7 @@ from distutils.util import strtobool
 from enum import Flag, auto
 from typing import Any, Callable, Dict, Mapping, Optional
 
-from jsonschema import Draft7Validator, ValidationError, validators
-
-json_to_python_simple = {"string": str, "number": float, "integer": int, "boolean": bool, "null": type(None)}
-json_to_python = json_to_python_simple | {"object": dict, "array": list}
-python_to_json = {v: k for k, v in json_to_python.items()}
+from jsonschema import Draft7Validator, validators
 
 logger = logging.getLogger("airbyte")
 
@@ -118,10 +114,6 @@ class TypeTransformer:
                 if isinstance(original_item, str):
                     return strtobool(original_item) == 1
                 return bool(original_item)
-            elif target_type == "array":
-                item_types = set(subschema.get("items", {}).get("type", set()))
-                if item_types.issubset(json_to_python_simple) and type(original_item) in json_to_python_simple.values():
-                    return [original_item]
         except (ValueError, TypeError):
             return original_item
         return original_item
@@ -153,18 +145,14 @@ class TypeTransformer:
                 return subschema
 
             # Transform object and array values before running json schema type checking for each element.
-            # Recursively normalize every value of the "instance" sub-object,
-            # if "instance" is an incorrect type - skip recursive normalization of "instance"
-            if schema_key == "properties" and isinstance(instance, dict):
+            if schema_key == "properties":
                 for k, subschema in property_value.items():
-                    if k in instance:
+                    if k in (instance or {}):
                         subschema = resolve(subschema)
                         instance[k] = self.__normalize(instance[k], subschema)
-            # Recursively normalize every item of the "instance" sub-array,
-            # if "instance" is an incorrect type - skip recursive normalization of "instance"
-            elif schema_key == "items" and isinstance(instance, list):
+            elif schema_key == "items":
                 subschema = resolve(property_value)
-                for index, item in enumerate(instance):
+                for index, item in enumerate((instance or [])):
                     instance[index] = self.__normalize(item, subschema)
 
             # Running native jsonschema traverse algorithm after field normalization is done.
@@ -186,11 +174,4 @@ class TypeTransformer:
             just calling normalizer.validate() would throw an exception on
             first validation occurences and stop processing rest of schema.
             """
-            logger.warning(self.get_error_message(e))
-
-    def get_error_message(self, e: ValidationError) -> str:
-        instance_json_type = python_to_json[type(e.instance)]
-        key_path = "." + ".".join(map(str, e.path))
-        return (
-            f"Failed to transform value {repr(e.instance)} of type '{instance_json_type}' to '{e.validator_value}', key path: '{key_path}'"
-        )
+            logger.warning(e.message)

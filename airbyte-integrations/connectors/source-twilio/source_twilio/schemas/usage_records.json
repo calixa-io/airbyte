@@ -11,7 +11,7 @@
     },
     "subresource_uris": {
       "type": ["null", "object"],
-      "additionalProperties": true,
+      "additionalProperties": false,
       "properties": {
         "yesterday": {
           "type": ["null", "string"]
@@ -76,5 +76,5 @@
     }
   },
   "type": "object",
-  "additionalProperties": true
+  "additionalProperties": false
 }

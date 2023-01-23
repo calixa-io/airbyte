@@ -24,7 +24,7 @@ import io.airbyte.protocol.models.AirbyteStateMessage;
 import io.airbyte.protocol.models.AirbyteStateMessage.AirbyteStateType;
 import io.airbyte.protocol.models.AirbyteStreamState;
 import io.airbyte.protocol.models.StreamDescriptor;
-import io.airbyte.workers.helper.ProtocolConverters;
+import io.airbyte.server.converters.ProtocolConverters;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;

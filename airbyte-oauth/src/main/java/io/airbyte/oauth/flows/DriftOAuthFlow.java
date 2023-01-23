@@ -25,7 +25,6 @@ import org.apache.http.client.utils.URIBuilder;
 public class DriftOAuthFlow extends BaseOAuth2Flow {
 
   private static final String ACCESS_TOKEN_URL = "https://driftapi.com/oauth2/token";
-  private static final String CODE = "code";
 
   public DriftOAuthFlow(final ConfigRepository configRepository, final HttpClient httpClient) {
     super(configRepository, httpClient);
@@ -43,7 +42,7 @@ public class DriftOAuthFlow extends BaseOAuth2Flow {
         .setScheme("https")
         .setHost("dev.drift.com")
         .setPath("authorize")
-        .addParameter("response_type", CODE)
+        .addParameter("response_type", "code")
         .addParameter("client_id", clientId)
         .addParameter("redirect_uri", redirectUrl)
         .addParameter("state", getState());
@@ -56,8 +55,8 @@ public class DriftOAuthFlow extends BaseOAuth2Flow {
 
   @Override
   protected String extractCodeParameter(final Map<String, Object> queryParams) throws IOException {
-    if (queryParams.containsKey(CODE)) {
-      return (String) queryParams.get(CODE);
+    if (queryParams.containsKey("code")) {
+      return (String) queryParams.get("code");
     } else {
       throw new IOException("Undefined 'code' from consent redirected url.");
     }
@@ -76,7 +75,7 @@ public class DriftOAuthFlow extends BaseOAuth2Flow {
     return ImmutableMap.<String, String>builder()
         .put("client_id", clientId)
         .put("client_secret", clientSecret)
-        .put(CODE, authCode)
+        .put("code", authCode)
         .put("grant_type", "authorization_code")
         .build();
   }

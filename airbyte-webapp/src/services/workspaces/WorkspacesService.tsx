@@ -1,8 +1,8 @@
 import React, { useCallback, useContext, useMemo } from "react";
 import { useMutation, useQueryClient } from "react-query";
-import { useNavigate, useParams } from "react-router-dom";
 
 import { Workspace, WorkspaceService } from "core/domain/workspace";
+import useRouter from "hooks/useRouter";
 import { RoutePaths } from "pages/routePaths";
 
 import { useConfig } from "../../config";
@@ -29,22 +29,22 @@ export const WorkspaceServiceContext = React.createContext<Context | null>(null)
 
 const useSelectWorkspace = (): ((workspace?: string | null | Workspace) => void) => {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
+  const { push } = useRouter();
 
   return useCallback(
     async (workspace) => {
       if (typeof workspace === "object") {
-        navigate(`/${RoutePaths.Workspaces}/${workspace?.workspaceId}`);
+        push(`/${RoutePaths.Workspaces}/${workspace?.workspaceId}`);
       } else {
-        navigate(`/${RoutePaths.Workspaces}/${workspace}`);
+        push(`/${RoutePaths.Workspaces}/${workspace}`);
       }
-      queryClient.removeQueries(SCOPE_WORKSPACE);
+      await queryClient.removeQueries(SCOPE_WORKSPACE);
     },
-    [navigate, queryClient]
+    [push, queryClient]
   );
 };
 
-export const WorkspaceServiceProvider: React.FC<React.PropsWithChildren<unknown>> = ({ children }) => {
+export const WorkspaceServiceProvider: React.FC = ({ children }) => {
   const selectWorkspace = useSelectWorkspace();
 
   const ctx = useMemo<Context>(
@@ -76,9 +76,9 @@ function useWorkspaceApiService() {
 }
 
 export const useCurrentWorkspaceId = () => {
-  const params = useParams<{ workspaceId: string }>();
+  const { params } = useRouter<unknown, { workspaceId: string }>();
 
-  return params.workspaceId as string;
+  return params.workspaceId;
 };
 
 export const useCurrentWorkspace = () => {
@@ -126,13 +126,4 @@ export const useUpdateWorkspace = () => {
       queryClient.setQueryData(workspaceKeys.detail(data.workspaceId), data);
     },
   });
-};
-
-export const useInvalidateWorkspace = (workspaceId: string) => {
-  const queryClient = useQueryClient();
-
-  return useCallback(
-    () => queryClient.invalidateQueries(workspaceKeys.detail(workspaceId)),
-    [queryClient, workspaceId]
-  );
 };

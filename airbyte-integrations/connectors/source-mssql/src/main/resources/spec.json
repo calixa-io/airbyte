@@ -1,5 +1,5 @@
 {
-  "documentationUrl": "https://docs.airbyte.com/integrations/destinations/mssql",
+  "documentationUrl": "https://docs.airbyte.io/integrations/destinations/mssql",
   "connectionSpecification": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "MSSQL Source Spec",
@@ -28,42 +28,30 @@
         "examples": ["master"],
         "order": 2
       },
-      "schemas": {
-        "title": "Schemas",
-        "description": "The list of schemas to sync from. Defaults to user. Case sensitive.",
-        "type": "array",
-        "items": {
-          "type": "string"
-        },
-        "minItems": 0,
-        "uniqueItems": true,
-        "default": ["dbo"],
-        "order": 3
-      },
       "username": {
         "description": "The username which is used to access the database.",
         "title": "Username",
         "type": "string",
-        "order": 4
+        "order": 3
       },
       "password": {
         "description": "The password associated with the username.",
         "title": "Password",
         "type": "string",
         "airbyte_secret": true,
-        "order": 5
+        "order": 4
       },
       "jdbc_url_params": {
         "title": "JDBC URL Params",
         "description": "Additional properties to pass to the JDBC URL string when connecting to the database formatted as 'key=value' pairs separated by the symbol '&'. (example: key1=value1&key2=value2&key3=value3).",
         "type": "string",
-        "order": 6
+        "order": 5
       },
       "ssl_method": {
         "title": "SSL Method",
         "type": "object",
         "description": "The encryption method which is used when communicating with the database.",
-        "order": 7,
+        "order": 6,
         "oneOf": [
           {
             "title": "Unencrypted",
@@ -72,7 +60,9 @@
             "properties": {
               "ssl_method": {
                 "type": "string",
-                "const": "unencrypted"
+                "const": "unencrypted",
+                "enum": ["unencrypted"],
+                "default": "unencrypted"
               }
             }
           },
@@ -83,7 +73,9 @@
             "properties": {
               "ssl_method": {
                 "type": "string",
-                "const": "encrypted_trust_server_certificate"
+                "const": "encrypted_trust_server_certificate",
+                "enum": ["encrypted_trust_server_certificate"],
+                "default": "encrypted_trust_server_certificate"
               }
             }
           },
@@ -94,7 +86,9 @@
             "properties": {
               "ssl_method": {
                 "type": "string",
-                "const": "encrypted_verify_certificate"
+                "const": "encrypted_verify_certificate",
+                "enum": ["encrypted_verify_certificate"],
+                "default": "encrypted_verify_certificate"
               },
               "hostNameInCertificate": {
                 "title": "Host Name In Certificate",
@@ -106,7 +100,7 @@
           }
         ]
       },
-      "replication_method": {
+      "replication": {
         "type": "object",
         "title": "Replication Method",
         "description": "The replication method used for extracting data from the database. STANDARD replication requires no setup on the DB side but will not be able to represent deletions incrementally. CDC uses {TBC} to detect inserts, updates, and deletes. This needs to be configured on the source database itself.",
@@ -116,11 +110,13 @@
           {
             "title": "Standard",
             "description": "Standard replication requires no setup on the DB side but will not be able to represent deletions incrementally.",
-            "required": ["method"],
+            "required": ["replication_type"],
             "properties": {
-              "method": {
+              "replication_type": {
                 "type": "string",
                 "const": "STANDARD",
+                "enum": ["STANDARD"],
+                "default": "STANDARD",
                 "order": 0
               }
             }
@@ -128,11 +124,13 @@
           {
             "title": "Logical Replication (CDC)",
             "description": "CDC uses {TBC} to detect inserts, updates, and deletes. This needs to be configured on the source database itself.",
-            "required": ["method"],
+            "required": ["replication_type"],
             "properties": {
-              "method": {
+              "replication_type": {
                 "type": "string",
                 "const": "CDC",
+                "enum": ["CDC"],
+                "default": "CDC",
                 "order": 0
               },
               "data_to_sync": {

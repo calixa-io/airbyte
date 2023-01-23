@@ -8,48 +8,23 @@ import { LoadingPage } from "components";
 
 import { useConfig } from "config";
 import { useI18nContext } from "core/i18n";
-import { useAnalyticsService } from "hooks/services/Analytics";
-import { useAppMonitoringService, AppActionCodes } from "hooks/services/AppMonitoringService";
+import { useAnalytics } from "hooks/services/Analytics";
 import { ExperimentProvider, ExperimentService } from "hooks/services/Experiment";
 import type { Experiments } from "hooks/services/Experiment/experiments";
-import { FeatureSet, FeatureItem, useFeatureService } from "hooks/services/Feature";
+import { FeatureSet, useFeatureService } from "hooks/services/Feature";
 import { User } from "packages/cloud/lib/domain/users";
 import { useAuthService } from "packages/cloud/services/auth/AuthService";
 import { rejectAfter } from "utils/promises";
 
 /**
- * This service hardcodes two conventions about the format of the LaunchDarkly feature
- * flags we use to override feature settings:
- * 1) each feature flag's key (a unique string which is used as the flag's field name in
- *    LaunchDarkly's JSON payloads) is a string satisfying the LDFeatureName type.
- * 2) for each feature flag, LaunchDarkly will return a JSON blob satisfying the
- *    LDFeatureToggle type.
- *
- * The primary benefit of programmatically requiring a specific prefix is to provide a
- * reliable search term which can be used in LaunchDarkly to filter the list of feature
- * flags to all of, and only, the ones which can dynamically toggle features in the UI.
- *
- * LDFeatureToggle objects can take three forms, representing the three possible decision
- * states LaunchDarkly can provide for a user/feature pair:
- * |--------------------------+-----------------------------------------------|
- * | `{}`                     | use the application's default feature setting |
- * | `{ "enabled": true }`    | enable the feature                            |
- * | `{ "enabled": false }`   | disable the feature                           |
- * |--------------------------+-----------------------------------------------|
- */
-const FEATURE_FLAG_PREFIX = "featureService";
-type LDFeatureName = `${typeof FEATURE_FLAG_PREFIX}.${FeatureItem}`;
-interface LDFeatureToggle {
-  enabled?: boolean;
-}
-type LDFeatureFlagResponse = Record<LDFeatureName, LDFeatureToggle>;
-type LDInitState = "initializing" | "failed" | "initialized";
-
-/**
  * The maximum time in milliseconds we'll wait for LaunchDarkly to finish initialization,
  * before running disabling it.
  */
-const INITIALIZATION_TIMEOUT = 5000;
+const INITIALIZATION_TIMEOUT = 1500;
+
+const FEATURE_FLAG_EXPERIMENT = "featureService.overwrites";
+
+type LDInitState = "initializing" | "failed" | "initialized";
 
 function mapUserToLDUser(user: User | null, locale: string): LDClient.LDUser {
   return user
@@ -66,15 +41,14 @@ function mapUserToLDUser(user: User | null, locale: string): LDClient.LDUser {
       };
 }
 
-const LDInitializationWrapper: React.FC<React.PropsWithChildren<{ apiKey: string }>> = ({ children, apiKey }) => {
+const LDInitializationWrapper: React.FC<{ apiKey: string }> = ({ children, apiKey }) => {
   const { setFeatureOverwrites } = useFeatureService();
   const ldClient = useRef<LDClient.LDClient>();
   const [state, setState] = useState<LDInitState>("initializing");
   const { user } = useAuthService();
-  const analyticsService = useAnalyticsService();
+  const { addContextProps: addAnalyticsContext } = useAnalytics();
   const { locale } = useIntl();
   const { setMessageOverwrite } = useI18nContext();
-  const { trackAction } = useAppMonitoringService();
 
   /**
    * This function checks for all experiments to find the ones beginning with "i18n_{locale}_"
@@ -93,20 +67,18 @@ const LDInitializationWrapper: React.FC<React.PropsWithChildren<{ apiKey: string
 
   /**
    * Update the feature overwrites based on the LaunchDarkly value.
-   * The feature flag variants which do not include a JSON `enabled` field are filtered
-   * out; then, each feature corresponding to one of the remaining feature flag overwrites
-   * is either enabled or disabled for the current user based on the boolean value of its
-   * overwrite's `enabled` field.
+   * It's expected to be a comma separated list of features (the values
+   * of the enum) that should be enabled. Each can be prefixed with "-"
+   * to disable the feature instead.
    */
-  const updateFeatureOverwrites = () => {
-    const allFlags = (ldClient.current?.allFlags() ?? {}) as LDFeatureFlagResponse;
-    const featureSet: FeatureSet = Object.fromEntries(
-      Object.entries(allFlags)
-        .filter(([flagName]) => flagName.startsWith(FEATURE_FLAG_PREFIX))
-        .map(([flagName, { enabled }]) => [flagName.replace(`${FEATURE_FLAG_PREFIX}.`, ""), enabled])
-        .filter(([_, enabled]) => typeof enabled !== "undefined")
-    );
-
+  const updateFeatureOverwrites = (featureOverwriteString: string) => {
+    const featureSet = featureOverwriteString.split(",").reduce((featureSet, featureString) => {
+      const [key, enabled] = featureString.startsWith("-") ? [featureString.slice(1), false] : [featureString, true];
+      return {
+        ...featureSet,
+        [key]: enabled,
+      };
+    }, {} as FeatureSet);
     setFeatureOverwrites(featureSet);
   };
 
@@ -115,36 +87,40 @@ const LDInitializationWrapper: React.FC<React.PropsWithChildren<{ apiKey: string
     // Wait for either LaunchDarkly to initialize or a specific timeout to pass first
     Promise.race([
       ldClient.current.waitForInitialization(),
-      rejectAfter(INITIALIZATION_TIMEOUT, AppActionCodes.LD_LOAD_TIMEOUT),
+      rejectAfter(INITIALIZATION_TIMEOUT, "Timed out waiting for LaunchDarkly to initialize"),
     ])
       .then(() => {
         // The LaunchDarkly promise resolved before the timeout, so we're good to use LD.
         setState("initialized");
         // Make sure enabled experiments are added to each analytics event
-        analyticsService.setContext({ experiments: JSON.stringify(ldClient.current?.allFlags()) });
+        addAnalyticsContext({ experiments: JSON.stringify(ldClient.current?.allFlags()) });
         // Check for overwritten i18n messages
         updateI18nMessages();
-        updateFeatureOverwrites();
+        updateFeatureOverwrites(ldClient.current?.variation(FEATURE_FLAG_EXPERIMENT, ""));
       })
       .catch((reason) => {
         // If the promise fails, either because LaunchDarkly service fails to initialize, or
         // our timeout promise resolves first, we're going to show an error and assume the service
         // failed to initialize, i.e. we'll run without it.
         console.warn(`Failed to initialize LaunchDarkly service with reason: ${String(reason)}`);
-        if (reason === AppActionCodes.LD_LOAD_TIMEOUT) {
-          trackAction(AppActionCodes.LD_LOAD_TIMEOUT);
-        }
         setState("failed");
       });
   }
 
   useEffectOnce(() => {
+    const onFeatureServiceCange = (newOverwrites: string) => {
+      updateFeatureOverwrites(newOverwrites);
+    };
+    ldClient.current?.on(`change:${FEATURE_FLAG_EXPERIMENT}`, onFeatureServiceCange);
+    return () => ldClient.current?.off(`change:${FEATURE_FLAG_EXPERIMENT}`, onFeatureServiceCange);
+  });
+
+  useEffectOnce(() => {
     const onFeatureFlagsChanged = () => {
       // Update analytics context whenever a flag changes
-      analyticsService.setContext({ experiments: JSON.stringify(ldClient.current?.allFlags()) });
+      addAnalyticsContext({ experiments: JSON.stringify(ldClient.current?.allFlags()) });
       // Check for overwritten i18n messages
       updateI18nMessages();
-      updateFeatureOverwrites();
     };
     ldClient.current?.on("change", onFeatureFlagsChanged);
     return () => ldClient.current?.off("change", onFeatureFlagsChanged);
@@ -193,7 +169,7 @@ const LDInitializationWrapper: React.FC<React.PropsWithChildren<{ apiKey: string
   return <ExperimentProvider value={experimentService}>{children}</ExperimentProvider>;
 };
 
-export const LDExperimentServiceProvider: React.FC<React.PropsWithChildren<unknown>> = ({ children }) => {
+export const LDExperimentServiceProvider: React.FC = ({ children }) => {
   const { launchDarkly: launchdarklyKey } = useConfig();
 
   return !launchdarklyKey ? (

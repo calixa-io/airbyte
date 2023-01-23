@@ -1,11 +1,22 @@
 import React from "react";
 import { FormattedMessage } from "react-intl";
+import styled from "styled-components";
 
-import { Button } from "components/ui/Button";
+import { Button } from "components";
 
-import { ConnectionFormMode } from "hooks/services/ConnectionForm/ConnectionFormService";
+import { ConnectionFormMode } from "views/Connection/ConnectionForm/ConnectionForm";
 
-import styles from "./EditorHeader.module.scss";
+const Content = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-direction: row;
+  color: ${({ theme }) => theme.textColor};
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 17px;
+  margin: 5px 0 10px;
+`;
 
 interface EditorHeaderProps {
   mainTitle?: React.ReactNode;
@@ -25,14 +36,14 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
   disabled,
 }) => {
   return (
-    <div className={styles.editorHeader}>
+    <Content>
       {mainTitle || <FormattedMessage id="form.items" values={{ count: itemsCount }} />}
       {mode !== "readonly" && (
-        <Button variant="secondary" type="button" onClick={onAddItem} data-testid="addItemButton" disabled={disabled}>
+        <Button secondary type="button" onClick={onAddItem} data-testid="addItemButton" disabled={disabled}>
           {addButtonText || <FormattedMessage id="form.addItems" />}
         </Button>
       )}
-    </div>
+    </Content>
   );
 };
 

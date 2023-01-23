@@ -8,7 +8,5 @@ export const useAnalyticsService = (): AnalyticsService => {
     track: jest.fn(),
     identify: jest.fn(),
     group: jest.fn(),
-    setContext: jest.fn(),
-    removeFromContext: jest.fn(),
   } as unknown as AnalyticsService;
 };

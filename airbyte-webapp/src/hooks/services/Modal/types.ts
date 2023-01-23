@@ -1,13 +1,12 @@
 import React from "react";
 
-import { ModalProps } from "components/ui/Modal";
+import { ModalProps } from "components/Modal/Modal";
 
 export interface ModalOptions<T> {
   title: ModalProps["title"];
   size?: ModalProps["size"];
   preventCancel?: boolean;
   content: React.ComponentType<ModalContentProps<T>>;
-  testId?: string;
 }
 
 export type ModalResult<T> = { type: "canceled" } | { type: "closed"; reason: T };

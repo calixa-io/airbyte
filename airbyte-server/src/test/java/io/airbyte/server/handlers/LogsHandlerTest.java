@@ -28,7 +28,8 @@ class LogsHandlerTest {
     when(configs.getLogConfigs()).thenReturn(LogConfigs.EMPTY);
 
     final File expected = Path.of(String.format("/workspace/server/logs/%s", LogClientSingleton.LOG_FILENAME)).toFile();
-    final File actual = new LogsHandler(configs).getLogs(new LogsRequestBody().logType(LogType.SERVER));
+    final File actual = new LogsHandler().getLogs(configs.getWorkspaceRoot(), configs.getWorkerEnvironment(),
+        configs.getLogConfigs(), new LogsRequestBody().logType(LogType.SERVER));
 
     assertEquals(expected, actual);
   }
@@ -41,7 +42,8 @@ class LogsHandlerTest {
     when(configs.getLogConfigs()).thenReturn(LogConfigs.EMPTY);
 
     final File expected = Path.of(String.format("/workspace/scheduler/logs/%s", LogClientSingleton.LOG_FILENAME)).toFile();
-    final File actual = new LogsHandler(configs).getLogs(new LogsRequestBody().logType(LogType.SCHEDULER));
+    final File actual = new LogsHandler().getLogs(configs.getWorkspaceRoot(), configs.getWorkerEnvironment(),
+        configs.getLogConfigs(), new LogsRequestBody().logType(LogType.SCHEDULER));
 
     assertEquals(expected, actual);
   }

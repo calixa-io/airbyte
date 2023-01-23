@@ -1,14 +1,14 @@
 import type { Transition } from "history";
 
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 
 import { useBlocker } from "hooks/router/useBlocker";
 
 import { useConfirmationModalService } from "../ConfirmationModal";
-import { useFormChangeTrackerService } from "./hooks";
+import { useChangedFormsById } from "./hooks";
 
-export const FormChangeTrackerService: React.FC<React.PropsWithChildren<unknown>> = ({ children }) => {
-  const { hasFormChanges, clearAllFormChanges } = useFormChangeTrackerService();
+export const FormChangeTrackerService: React.FC = ({ children }) => {
+  const [changedFormsById, setChangedFormsById] = useChangedFormsById();
   const { openConfirmationModal, closeConfirmationModal } = useConfirmationModalService();
 
   const blocker = useCallback(
@@ -18,16 +18,21 @@ export const FormChangeTrackerService: React.FC<React.PropsWithChildren<unknown>
         text: "form.discardChangesConfirmation",
         submitButtonText: "form.discardChanges",
         onSubmit: () => {
-          clearAllFormChanges();
+          setChangedFormsById({});
           closeConfirmationModal();
           tx.retry();
         },
       });
     },
-    [clearAllFormChanges, closeConfirmationModal, openConfirmationModal]
+    [closeConfirmationModal, openConfirmationModal, setChangedFormsById]
   );
 
-  useBlocker(blocker, hasFormChanges);
+  const formsChanged = useMemo(
+    () => Object.values(changedFormsById ?? {}).some((formChanged) => formChanged),
+    [changedFormsById]
+  );
+
+  useBlocker(blocker, formsChanged);
 
   return <>{children}</>;
 };

@@ -1,44 +1,90 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { FormattedMessage } from "react-intl";
+import { Navigate, Route, Routes } from "react-router-dom";
+import styled from "styled-components";
 
-import { HeadTitle } from "components/common/HeadTitle";
-import { MainPageWithScroll } from "components/common/MainPageWithScroll";
-import { PageHeader } from "components/ui/PageHeader";
-import { Spinner } from "components/ui/Spinner";
-import { Text } from "components/ui/Text";
+import { PageTitle } from "components";
+import HeadTitle from "components/HeadTitle";
+import LoadingPage from "components/LoadingPage";
+import MainPageWithScroll from "components/MainPageWithScroll";
+import SideMenu from "components/SideMenu";
+import { CategoryItem } from "components/SideMenu/SideMenu";
 
-import { PageTrackingCodes, useTrackPage } from "hooks/services/Analytics";
+import useRouter from "hooks/useRouter";
+import { CloudRoutes } from "packages/cloud/cloudRoutes";
 import { useAuthService } from "packages/cloud/services/auth/AuthService";
 
-import CreditsUsage from "./components/CreditsUsage";
+import CreditsUsagePage from "./components/CreditsUsagePage";
 import { EmailVerificationHint } from "./components/EmailVerificationHint";
 import RemainingCredits from "./components/RemainingCredits";
-import styles from "./CreditsPage.module.scss";
+
+const Content = styled.div`
+  margin: 0 33px 0 27px;
+  height: 100%;
+`;
+
+const MainInfo = styled.div`
+  display: flex;
+  flex-direction: row;
+  margin-top: 29px;
+`;
+
+const MainView = styled.div`
+  width: 100%;
+  margin-left: 47px;
+`;
+
+const EmailVerificationHintWithMargin = styled(EmailVerificationHint)`
+  margin-bottom: 8px;
+`;
 
 const CreditsPage: React.FC = () => {
+  const { push, pathname } = useRouter();
+  const onSelectMenuItem = (newPath: string) => push(newPath);
   const { emailVerified } = useAuthService();
-  useTrackPage(PageTrackingCodes.CREDITS);
+
+  const menuItems: CategoryItem[] = [
+    {
+      routes: [
+        {
+          path: ``,
+          name: <FormattedMessage id="credits.creditUsage" />,
+          component: CreditsUsagePage,
+        },
+      ],
+    },
+  ];
+
+  const firstRoute = menuItems?.[0].routes?.[0]?.path;
+
   return (
     <MainPageWithScroll
       headTitle={<HeadTitle titles={[{ id: "credits.credits" }]} />}
-      pageTitle={<PageHeader title={<FormattedMessage id="credits.credits" />} />}
+      pageTitle={<PageTitle title={<FormattedMessage id="credits.credits" />} />}
     >
-      <div className={styles.content}>
-        {!emailVerified && <EmailVerificationHint className={styles.emailVerificationHint} />}
+      <Content>
+        {!emailVerified && <EmailVerificationHintWithMargin />}
         <RemainingCredits selfServiceCheckoutEnabled={emailVerified} />
-        <React.Suspense
-          fallback={
-            <div className={styles.creditUsageLoading}>
-              <Spinner small />
-              <Text>
-                <FormattedMessage id="credits.loadingCreditsUsage" />
-              </Text>
-            </div>
-          }
-        >
-          <CreditsUsage />
-        </React.Suspense>
-      </div>
+        <MainInfo>
+          <SideMenu data={menuItems} onSelect={onSelectMenuItem} activeItem={pathname} />
+          <MainView>
+            <Suspense fallback={<LoadingPage />}>
+              <Routes>
+                {menuItems.flatMap((menuItem) =>
+                  menuItem.routes.map(({ path, component: Component }) => (
+                    <Route key={`${path}`} path={`${path}`} element={<Component />} />
+                  ))
+                )}
+
+                <Route
+                  path="*"
+                  element={<Navigate to={firstRoute ? `${menuItems?.[0].routes?.[0]?.path}` : CloudRoutes.Root} />}
+                />
+              </Routes>
+            </Suspense>
+          </MainView>
+        </MainInfo>
+      </Content>
     </MainPageWithScroll>
   );
 };

@@ -63,21 +63,13 @@ public class CustomerioNotificationClient extends NotificationClient {
   }
 
   @Override
-  public boolean notifyJobFailure(final String sourceConnector,
-                                  final String destinationConnector,
-                                  final String jobDescription,
-                                  final String logUrl,
-                                  final Long jobId)
+  public boolean notifyJobFailure(final String sourceConnector, final String destinationConnector, final String jobDescription, final String logUrl)
       throws IOException, InterruptedException {
     throw new NotImplementedException();
   }
 
   @Override
-  public boolean notifyJobSuccess(final String sourceConnector,
-                                  final String destinationConnector,
-                                  final String jobDescription,
-                                  final String logUrl,
-                                  final Long jobId)
+  public boolean notifyJobSuccess(final String sourceConnector, final String destinationConnector, final String jobDescription, final String logUrl)
       throws IOException, InterruptedException {
     throw new NotImplementedException();
   }
@@ -118,11 +110,6 @@ public class CustomerioNotificationClient extends NotificationClient {
 
   @Override
   public boolean notifyFailure(final String message) throws IOException, InterruptedException {
-    throw new NotImplementedException();
-  }
-
-  @Override
-  public boolean notifySchemaChange(final UUID connectionId, final boolean isBreaking) {
     throw new NotImplementedException();
   }
 

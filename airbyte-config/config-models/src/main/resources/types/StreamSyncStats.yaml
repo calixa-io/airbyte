@@ -11,8 +11,5 @@ additionalProperties: false
 properties:
   streamName:
     type: string
-  # Not required as not all sources emits a namespace for each Stream.
-  streamNamespace:
-    type: string
   stats:
     "$ref": SyncStats.yaml

@@ -24,18 +24,18 @@
     },
     {
       "stream": {
-        "name": "group_members",
+        "name": "logs",
         "json_schema": {},
         "supported_sync_modes": ["full_refresh", "incremental"]
       },
       "sync_mode": "incremental",
       "destination_sync_mode": "overwrite",
-      "cursor_field": ["id"],
-      "primary_key": [["id"]]
+      "cursor_field": ["published"],
+      "primary_key": [["uuid"]]
     },
     {
       "stream": {
-        "name": "resource_sets",
+        "name": "group_members",
         "json_schema": {},
         "supported_sync_modes": ["full_refresh", "incremental"]
       },
@@ -80,17 +80,6 @@
       "sync_mode": "full_refresh",
       "destination_sync_mode": "overwrite",
       "primary_key": [["label"]]
-    },
-    {
-      "stream": {
-        "name": "logs",
-        "json_schema": {},
-        "supported_sync_modes": ["full_refresh", "incremental"]
-      },
-      "sync_mode": "incremental",
-      "destination_sync_mode": "overwrite",
-      "cursor_field": ["published"],
-      "primary_key": [["uuid"]]
     }
   ]
 }

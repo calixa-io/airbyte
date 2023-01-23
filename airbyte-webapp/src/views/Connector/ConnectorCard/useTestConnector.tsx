@@ -2,11 +2,10 @@ import { useRef } from "react";
 
 import { ConnectorHelper } from "core/domain/connector";
 import { ConnectorT } from "core/domain/connector/types";
-import { CheckConnectionRead } from "core/request/AirbyteClient";
 import { CheckConnectorParams, useCheckConnector } from "hooks/services/useConnector";
-import { useCurrentWorkspace } from "services/workspaces/WorkspacesService";
+import { ServiceFormValues } from "views/Connector/ServiceForm";
 
-import { ConnectorCardValues } from "../ConnectorForm";
+import { CheckConnectionRead } from "../../../core/request/AirbyteClient";
 
 export const useTestConnector = (
   props: {
@@ -21,12 +20,11 @@ export const useTestConnector = (
   isTestConnectionInProgress: boolean;
   isSuccess: boolean;
   onStopTesting: () => void;
-  testConnector: (v?: ConnectorCardValues) => Promise<CheckConnectionRead>;
+  testConnector: (v?: ServiceFormValues) => Promise<CheckConnectionRead>;
   error: Error | null;
   reset: () => void;
 } => {
   const { mutateAsync, isLoading, error, isSuccess, reset } = useCheckConnector(props.formType);
-  const workspace = useCurrentWorkspace();
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -68,7 +66,6 @@ export const useTestConnector = (
           connectionConfiguration: values.connectionConfiguration,
           signal: controller.signal,
           selectedConnectorDefinitionId: values.serviceType,
-          workspaceId: workspace.workspaceId,
         };
       }
 

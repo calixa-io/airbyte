@@ -12,7 +12,6 @@ import io.airbyte.api.model.generated.StreamTransform;
 import io.airbyte.commons.enums.Enums;
 import io.airbyte.protocol.models.transform_models.FieldTransformType;
 import io.airbyte.protocol.models.transform_models.StreamTransformType;
-import io.airbyte.workers.helper.ProtocolConverters;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,7 +43,6 @@ public class CatalogDiffConverters {
     return new FieldTransform()
         .transformType(Enums.convertTo(transform.getTransformType(), FieldTransform.TransformTypeEnum.class))
         .fieldName(transform.getFieldName())
-        .breaking(transform.breaking())
         .addField(addFieldToApi(transform).orElse(null))
         .removeField(removeFieldToApi(transform).orElse(null))
         .updateFieldSchema(updateFieldToApi(transform).orElse(null));

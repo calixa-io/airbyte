@@ -1,12 +1,7 @@
-import className from "classnames";
 import React from "react";
-import { FormattedMessage } from "react-intl";
+import styled from "styled-components";
 
 import Label from "components/Label";
-import { Text } from "components/ui/Text";
-import { InfoTooltip } from "components/ui/Tooltip";
-
-import styles from "./ControlLabels.module.scss";
 
 export interface ControlLabelsProps {
   className?: string;
@@ -14,35 +9,29 @@ export interface ControlLabelsProps {
   success?: boolean;
   nextLine?: boolean;
   message?: React.ReactNode;
+  errorMessage?: React.ReactNode;
+  labelAdditionLength?: number;
   label?: React.ReactNode;
-  infoTooltipContent?: React.ReactNode;
-  optional?: boolean;
-  htmlFor?: string;
 }
 
-const ControlLabels: React.FC<React.PropsWithChildren<ControlLabelsProps>> = (props) => (
-  <div className={className(styles.controlContainer, props.className)}>
+const ControlContainer = styled.div`
+  width: 100%;
+  display: inline-block;
+`;
+
+const ControlLabels: React.FC<ControlLabelsProps> = (props) => (
+  <ControlContainer className={props.className}>
     <Label
       error={props.error}
       success={props.success}
       message={props.message}
+      additionLength={props.labelAdditionLength}
       nextLine={props.nextLine}
-      htmlFor={props.htmlFor}
     >
       {props.label}
-      {props.infoTooltipContent && (
-        <InfoTooltip className={styles.tooltip} placement="top-start">
-          {props.infoTooltipContent}
-        </InfoTooltip>
-      )}
-      {props.optional && (
-        <Text size="sm" className={styles.optionalText}>
-          <FormattedMessage id="form.optional" />
-        </Text>
-      )}
     </Label>
     {props.children}
-  </div>
+  </ControlContainer>
 );
 
 export { ControlLabels };

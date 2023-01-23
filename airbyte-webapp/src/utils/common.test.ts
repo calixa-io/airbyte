@@ -1,6 +1,6 @@
 import { isDefined } from "./common";
 
-it.each([
+test.each([
   [null, false],
   [undefined, false],
   ["", true],

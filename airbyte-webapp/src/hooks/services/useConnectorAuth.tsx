@@ -1,8 +1,5 @@
 import { useCallback, useMemo, useRef } from "react";
-import { useIntl } from "react-intl";
 import { useAsyncFn, useEffectOnce, useEvent } from "react-use";
-
-import { ToastType } from "components/ui/Toast";
 
 import { useConfig } from "config";
 import { ConnectorDefinitionSpecification, ConnectorSpecification } from "core/domain/connector";
@@ -10,13 +7,9 @@ import { DestinationAuthService } from "core/domain/connector/DestinationAuthSer
 import { isSourceDefinitionSpecification } from "core/domain/connector/source";
 import { SourceAuthService } from "core/domain/connector/SourceAuthService";
 import { DestinationOauthConsentRequest, SourceOauthConsentRequest } from "core/request/AirbyteClient";
-import { isCommonRequestError } from "core/request/CommonRequestError";
-import { useConnectorForm } from "views/Connector/ConnectorForm/connectorFormContext";
 
 import { useDefaultRequestMiddlewares } from "../../services/useDefaultRequestMiddlewares";
-import { useQuery } from "../useQuery";
-import { useAppMonitoringService } from "./AppMonitoringService";
-import { useNotificationService } from "./Notification";
+import useRouter from "../useRouter";
 import { useCurrentWorkspace } from "./useWorkspace";
 
 let windowObjectReference: Window | null = null; // global variable
@@ -52,12 +45,8 @@ export function useConnectorAuth(): {
     queryParams: Record<string, unknown>
   ) => Promise<Record<string, unknown>>;
 } {
-  const { formatMessage } = useIntl();
-  const { trackError } = useAppMonitoringService();
   const { workspaceId } = useCurrentWorkspace();
   const { apiUrl, oauthRedirectUrl } = useConfig();
-  const notificationService = useNotificationService();
-  const { connectorId } = useConnectorForm();
 
   // TODO: move to separate initFacade and use refs instead
   const requestAuthMiddleware = useDefaultRequestMiddlewares();
@@ -79,55 +68,26 @@ export function useConnectorAuth(): {
       payload: SourceOauthConsentRequest | DestinationOauthConsentRequest;
       consentUrl: string;
     }> => {
-      try {
-        if (isSourceDefinitionSpecification(connector)) {
-          const payload: SourceOauthConsentRequest = {
-            workspaceId,
-            sourceDefinitionId: ConnectorSpecification.id(connector),
-            redirectUrl: `${oauthRedirectUrl}/auth_flow`,
-            oAuthInputConfiguration,
-            sourceId: connectorId,
-          };
-          const response = await sourceAuthService.getConsentUrl(payload);
-
-          return { consentUrl: response.consentUrl, payload };
-        }
-        const payload: DestinationOauthConsentRequest = {
+      if (isSourceDefinitionSpecification(connector)) {
+        const payload = {
           workspaceId,
-          destinationDefinitionId: ConnectorSpecification.id(connector),
+          sourceDefinitionId: ConnectorSpecification.id(connector),
           redirectUrl: `${oauthRedirectUrl}/auth_flow`,
           oAuthInputConfiguration,
-          destinationId: connectorId,
         };
-        const response = await destinationAuthService.getConsentUrl(payload);
+        const response = await sourceAuthService.getConsentUrl(payload);
 
         return { consentUrl: response.consentUrl, payload };
-      } catch (e) {
-        // If this API returns a 404 the OAuth credentials have not been added to the database.
-        if (isCommonRequestError(e) && e.status === 404) {
-          if (process.env.NODE_ENV === "development") {
-            notificationService.registerNotification({
-              id: "oauthConnector.credentialsMissing",
-              // Since it's dev only we don't need i18n on this string
-              text: "OAuth is not enabled for this connector on this environment.",
-            });
-          } else {
-            // Log error to our monitoring, this should never happen and means OAuth credentials
-            // where missed
-            trackError(e, {
-              id: "oauthConnector.credentialsMissing",
-              connectorSpecId: ConnectorSpecification.id(connector),
-              workspaceId,
-            });
-            notificationService.registerNotification({
-              id: "oauthConnector.credentialsMissing",
-              text: formatMessage({ id: "connector.oauthCredentialsMissing" }),
-              type: ToastType.ERROR,
-            });
-          }
-        }
-        throw e;
       }
+      const payload = {
+        workspaceId,
+        destinationDefinitionId: ConnectorSpecification.id(connector),
+        redirectUrl: `${oauthRedirectUrl}/auth_flow`,
+        oAuthInputConfiguration,
+      };
+      const response = await destinationAuthService.getConsentUrl(payload);
+
+      return { consentUrl: response.consentUrl, payload };
     },
     completeOauthRequest: async (
       params: SourceOauthConsentRequest | DestinationOauthConsentRequest,
@@ -207,7 +167,7 @@ export function useRunOauthFlow(
 }
 
 export function useResolveNavigate(): void {
-  const query = useQuery();
+  const { query } = useRouter();
 
   useEffectOnce(() => {
     window.opener.postMessage(query);

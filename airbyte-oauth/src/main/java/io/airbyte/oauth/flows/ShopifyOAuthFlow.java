@@ -27,6 +27,7 @@ public class ShopifyOAuthFlow extends BaseOAuth2Flow {
       "read_orders",
       "read_all_orders",
       "read_assigned_fulfillment_orders",
+      "read_checkouts",
       "read_content",
       "read_customers",
       "read_discounts",

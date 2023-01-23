@@ -62,7 +62,7 @@ public class ImportApi {
       if (memberVarResponseInterceptor != null) {
         memberVarResponseInterceptor.accept(localVarResponse);
       }
-      if (errorResponse(localVarResponse)) {
+      if (localVarResponse.statusCode() / 100 != 2) {
         throw new ApiException(localVarResponse.statusCode(),
             "importArchive call received non-success response",
             localVarResponse.headers(),
@@ -79,10 +79,6 @@ public class ImportApi {
       Thread.currentThread().interrupt();
       throw new ApiException(e);
     }
-  }
-
-  private Boolean errorResponse(final HttpResponse<InputStream> localVarResponse) {
-    return localVarResponse.statusCode() / 100 != 2;
   }
 
   private HttpRequest.Builder importArchiveRequestBuilder(final File body) throws ApiException {

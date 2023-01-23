@@ -14,17 +14,10 @@
     "resolveJsonModule": true,
     "jsx": "react-jsx",
     "noFallthroughCasesInSwitch": true,
-    "types": ["cypress", "node"],
+    "types": ["cypress"],
     "lib": ["es2015", "dom"],
     "isolatedModules": false,
     "allowJs": true,
-    "noEmit": true,
-    "paths": {
-      "commands/*": ["commands/*"],
-      "fixtures/*": ["fixtures/*"],
-      "integration": ["integration/*"],
-      "pages/*": ["pages/*"],
-      "plugins/*": ["plugins/*"]
-    }
+    "noEmit": true
   }
 }

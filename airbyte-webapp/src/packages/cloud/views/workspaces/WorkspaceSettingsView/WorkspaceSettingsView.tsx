@@ -1,78 +1,66 @@
-import classNames from "classnames";
 import { Field, FieldProps, Form, Formik } from "formik";
 import React from "react";
 import { FormattedMessage, useIntl } from "react-intl";
-import * as yup from "yup";
+import styled from "styled-components";
 
-import { Label, LabeledInput, LabeledSwitch } from "components";
-import { Button } from "components/ui/Button";
-import { InfoTooltip } from "components/ui/Tooltip";
+import { Button, LabeledInput, LoadingButton } from "components";
 
-import { useTrackPage, PageTrackingCodes } from "hooks/services/Analytics";
-import { useAdvancedModeSetting } from "hooks/services/useAdvancedModeSetting";
 import { useCurrentWorkspace } from "hooks/services/useWorkspace";
 import {
-  useRemoveCloudWorkspace,
-  useUpdateCloudWorkspace,
-} from "packages/cloud/services/workspaces/CloudWorkspacesService";
+  useRemoveWorkspace,
+  useUpdateWorkspace,
+  useWorkspaceService,
+} from "packages/cloud/services/workspaces/WorkspacesService";
 import { Content, SettingsCard } from "pages/SettingsPage/pages/SettingsComponents";
-import { useInvalidateWorkspace, useWorkspaceService } from "services/workspaces/WorkspacesService";
 
-import styles from "./WorkspaceSettingsView.module.scss";
+const Header = styled.div`
+  display: flex;
+  justify-content: space-between;
+`;
 
-const AdvancedModeSwitchLabel = () => (
-  <>
-    <FormattedMessage id="settings.generalSettings.form.advancedMode.switchLabel" />
-    <InfoTooltip>
-      <FormattedMessage id="settings.generalSettings.form.advancedMode.tooltip" />
-    </InfoTooltip>
-  </>
-);
+const Buttons = styled.div`
+  margin-top: 10px;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
 
-const ValidationSchema = yup.object().shape({
-  name: yup.string().required("form.empty.error"),
-});
+  & > button {
+    margin-left: 5px;
+  }
+`;
 
 export const WorkspaceSettingsView: React.FC = () => {
   const { formatMessage } = useIntl();
-  useTrackPage(PageTrackingCodes.SETTINGS_WORKSPACE);
+
   const { exitWorkspace } = useWorkspaceService();
   const workspace = useCurrentWorkspace();
-  const { mutateAsync: removeCloudWorkspace, isLoading: isRemovingCloudWorkspace } = useRemoveCloudWorkspace();
-  const { mutateAsync: updateCloudWorkspace } = useUpdateCloudWorkspace();
-  const invalidateWorkspace = useInvalidateWorkspace(workspace.workspaceId);
-  const [isAdvancedMode, setAdvancedMode] = useAdvancedModeSetting();
+  const removeWorkspace = useRemoveWorkspace();
+  const updateWorkspace = useUpdateWorkspace();
 
   return (
     <>
       <SettingsCard
         title={
-          <div className={styles.header}>
+          <Header>
             <FormattedMessage id="settings.generalSettings" />
             <Button type="button" onClick={exitWorkspace} data-testid="button.changeWorkspace">
               <FormattedMessage id="settings.generalSettings.changeWorkspace" />
             </Button>
-          </div>
+          </Header>
         }
       >
         <Formik
-          initialValues={{
-            name: workspace.name,
-            advancedMode: isAdvancedMode,
-          }}
-          onSubmit={async (payload) => {
-            const { workspaceId } = workspace;
-            setAdvancedMode(payload.advancedMode);
-            await updateCloudWorkspace({
-              workspaceId,
+          initialValues={{ name: workspace.name }}
+          onSubmit={async (payload) =>
+            updateWorkspace.mutateAsync({
+              workspaceId: workspace.workspaceId,
               name: payload.name,
-            });
-            await invalidateWorkspace();
-          }}
-          enableReinitialize
-          validationSchema={ValidationSchema}
+            })
+          }
         >
-          {({ dirty, isSubmitting, resetForm, isValid, setFieldValue }) => (
+          {({ dirty, isSubmitting, resetForm, isValid }) => (
             <Form>
               <Content>
                 <Field name="name">
@@ -89,27 +77,14 @@ export const WorkspaceSettingsView: React.FC = () => {
                     />
                   )}
                 </Field>
-                <Label className={styles.formItem}>
-                  <FormattedMessage id="settings.generalSettings.form.advancedMode.label" />
-                </Label>
-                <Field name="advancedMode">
-                  {({ field }: FieldProps<boolean>) => (
-                    <LabeledSwitch
-                      label={<AdvancedModeSwitchLabel />}
-                      checked={field.value}
-                      onChange={() => setFieldValue(field.name, !field.value)}
-                    />
-                  )}
-                </Field>
-
-                <div className={classNames(styles.formItem, styles.buttonGroup)}>
-                  <Button type="button" variant="secondary" disabled={!dirty} onClick={() => resetForm()}>
-                    <FormattedMessage id="form.cancel" />
+                <Buttons>
+                  <Button type="button" secondary disabled={!dirty} onClick={() => resetForm()}>
+                    cancel
                   </Button>
-                  <Button type="submit" disabled={!dirty || !isValid} isLoading={isSubmitting}>
-                    <FormattedMessage id="form.saveChanges" />
-                  </Button>
-                </div>
+                  <LoadingButton type="submit" disabled={!isValid} isLoading={isSubmitting}>
+                    save changes
+                  </LoadingButton>
+                </Buttons>
               </Content>
             </Form>
           )}
@@ -117,16 +92,16 @@ export const WorkspaceSettingsView: React.FC = () => {
       </SettingsCard>
       <SettingsCard
         title={
-          <div className={styles.header}>
+          <Header>
             <FormattedMessage id="settings.generalSettings.deleteLabel" />
-            <Button
-              isLoading={isRemovingCloudWorkspace}
-              variant="danger"
-              onClick={() => removeCloudWorkspace(workspace.workspaceId)}
+            <LoadingButton
+              isLoading={removeWorkspace.isLoading}
+              danger
+              onClick={() => removeWorkspace.mutateAsync(workspace.workspaceId)}
             >
               <FormattedMessage id="settings.generalSettings.deleteText" />
-            </Button>
-          </div>
+            </LoadingButton>
+          </Header>
         }
       />
     </>

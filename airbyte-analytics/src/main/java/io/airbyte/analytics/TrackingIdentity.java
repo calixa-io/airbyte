@@ -9,7 +9,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
-@SuppressWarnings("PMD.CompareObjectsWithEquals")
 public class TrackingIdentity {
 
   private final AirbyteVersion airbyteVersion;

@@ -21,27 +21,25 @@ import java.util.stream.Stream;
 
 public class MoreResources {
 
-  private static final String UNSTABLE_API_USAGE = "UnstableApiUsage";
-
-  @SuppressWarnings(UNSTABLE_API_USAGE)
+  @SuppressWarnings("UnstableApiUsage")
   public static String readResource(final String name) throws IOException {
     final URL resource = Resources.getResource(name);
     return Resources.toString(resource, StandardCharsets.UTF_8);
   }
 
-  @SuppressWarnings(UNSTABLE_API_USAGE)
+  @SuppressWarnings("UnstableApiUsage")
   public static String readResource(final Class<?> klass, final String name) throws IOException {
     final String rootedName = !name.startsWith("/") ? String.format("/%s", name) : name;
     final URL url = Resources.getResource(klass, rootedName);
     return Resources.toString(url, StandardCharsets.UTF_8);
   }
 
-  @SuppressWarnings(UNSTABLE_API_USAGE)
+  @SuppressWarnings("UnstableApiUsage")
   public static File readResourceAsFile(final String name) throws URISyntaxException {
     return new File(Resources.getResource(name).toURI());
   }
 
-  @SuppressWarnings(UNSTABLE_API_USAGE)
+  @SuppressWarnings("UnstableApiUsage")
   public static byte[] readBytes(final String name) throws IOException {
     final URL resource = Resources.getResource(name);
     return Resources.toByteArray(resource);

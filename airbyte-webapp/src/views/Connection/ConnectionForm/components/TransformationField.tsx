@@ -4,15 +4,15 @@ import { FormattedMessage } from "react-intl";
 
 import ArrayOfObjectsEditor from "components/ArrayOfObjectsEditor";
 
-import { OperationRead } from "core/request/AirbyteClient";
-import { ConnectionFormMode } from "hooks/services/ConnectionForm/ConnectionFormService";
+import { OperationCreate, OperationRead } from "core/request/AirbyteClient";
 import { isDefined } from "utils/common";
 import TransformationForm from "views/Connection/TransformationForm";
 
-import { useDefaultTransformation } from "../formConfig";
+import { ConnectionFormMode } from "../ConnectionForm";
 
 interface TransformationFieldProps extends ArrayHelpers {
   form: FormikProps<{ transformations: OperationRead[] }>;
+  defaultTransformation: OperationCreate;
   mode?: ConnectionFormMode;
   onStartEdit?: () => void;
   onEndEdit?: () => void;
@@ -23,13 +23,12 @@ const TransformationField: React.FC<TransformationFieldProps> = ({
   push,
   replace,
   form,
+  defaultTransformation,
   mode,
   onStartEdit,
   onEndEdit,
 }) => {
   const [editableItemIdx, setEditableItem] = useState<number | null>(null);
-  const defaultTransformation = useDefaultTransformation();
-  const clearEditableItem = () => setEditableItem(null);
 
   return (
     <ArrayOfObjectsEditor
@@ -44,10 +43,6 @@ const TransformationField: React.FC<TransformationFieldProps> = ({
         setEditableItem(idx);
         onStartEdit?.();
       }}
-      onCancel={() => {
-        clearEditableItem();
-        onEndEdit?.();
-      }}
       mode={mode}
       editModalSize="xl"
       renderItemEditorForm={(editableItem) => (
@@ -55,7 +50,7 @@ const TransformationField: React.FC<TransformationFieldProps> = ({
           transformation={editableItem ?? defaultTransformation}
           isNewTransformation={!editableItem}
           onCancel={() => {
-            clearEditableItem();
+            setEditableItem(null);
             onEndEdit?.();
           }}
           onDone={(transformation) => {
@@ -63,7 +58,7 @@ const TransformationField: React.FC<TransformationFieldProps> = ({
               editableItemIdx >= form.values.transformations.length
                 ? push(transformation)
                 : replace(editableItemIdx, transformation);
-              clearEditableItem();
+              setEditableItem(null);
               onEndEdit?.();
             }
           }}

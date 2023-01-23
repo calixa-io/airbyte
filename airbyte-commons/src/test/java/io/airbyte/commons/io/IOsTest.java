@@ -25,28 +25,25 @@ import org.mockito.Mockito;
 
 class IOsTest {
 
-  private static final String ABC = "abc";
-  private static final String FILE = "file";
-
   @Test
   void testReadWrite() throws IOException {
     final Path path = Files.createTempDirectory("tmp");
 
-    final Path filePath = IOs.writeFile(path, FILE, ABC);
+    final Path filePath = IOs.writeFile(path, "file", "abc");
 
-    assertEquals(path.resolve(FILE), filePath);
-    assertEquals(ABC, IOs.readFile(path, FILE));
-    assertEquals(ABC, IOs.readFile(path.resolve(FILE)));
+    assertEquals(path.resolve("file"), filePath);
+    assertEquals("abc", IOs.readFile(path, "file"));
+    assertEquals("abc", IOs.readFile(path.resolve("file")));
   }
 
   @Test
   void testWriteBytes() throws IOException {
     final Path path = Files.createTempDirectory("tmp");
 
-    final Path filePath = IOs.writeFile(path.resolve(FILE), ABC.getBytes(StandardCharsets.UTF_8));
+    final Path filePath = IOs.writeFile(path.resolve("file"), "abc".getBytes(StandardCharsets.UTF_8));
 
-    assertEquals(path.resolve(FILE), filePath);
-    assertEquals(ABC, IOs.readFile(path, FILE));
+    assertEquals(path.resolve("file"), filePath);
+    assertEquals("abc", IOs.readFile(path, "file"));
   }
 
   @Test

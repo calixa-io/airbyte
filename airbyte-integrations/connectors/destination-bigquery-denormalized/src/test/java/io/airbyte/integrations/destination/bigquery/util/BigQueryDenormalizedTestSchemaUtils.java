@@ -42,10 +42,6 @@ public class BigQueryDenormalizedTestSchemaUtils {
     return getTestDataFromResourceJson("schemaWithNestedDatetimeInsideNullObject.json");
   }
 
-  public static JsonNode getSchemaArrays() {
-    return getTestDataFromResourceJson("schemaArrays.json");
-  }
-
   public static JsonNode getExpectedSchema() {
     return getTestDataFromResourceJson("expectedSchema.json");
   }
@@ -68,18 +64,6 @@ public class BigQueryDenormalizedTestSchemaUtils {
 
   public static JsonNode getExpectedSchemaWithNestedDatetimeInsideNullObject() {
     return getTestDataFromResourceJson("expectedSchemaWithNestedDatetimeInsideNullObject.json");
-  }
-
-  public static JsonNode getExpectedSchemaArrays() {
-    return getTestDataFromResourceJson("expectedSchemaArrays.json");
-  }
-
-  public static JsonNode getExpectedSchemaArraysLegacy() {
-    return getTestDataFromResourceJson("expectedSchemaArraysLegacy.json");
-  }
-
-  public static JsonNode getSchemaWithAllOf() {
-    return getTestDataFromResourceJson("schemaAllOf.json");
   }
 
   private static JsonNode getTestDataFromResourceJson(final String fileName) {

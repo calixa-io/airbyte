@@ -1,14 +1,14 @@
 import queryString from "query-string";
 import React, { useCallback } from "react";
 import { FormattedMessage } from "react-intl";
-import { useNavigate } from "react-router-dom";
 import { CellProps } from "react-table";
 import styled from "styled-components";
 
+import SortButton from "components/EntityTable/components/SortButton";
 import { SortOrderEnum } from "components/EntityTable/types";
-import { Table, SortableTableHeader } from "components/ui/Table";
+import Table from "components/Table";
 
-import { useQuery } from "hooks/useQuery";
+import useRouter from "hooks/useRouter";
 import { CreditConsumptionByConnector } from "packages/cloud/lib/domain/cloudWorkspaces/types";
 import { useDestinationDefinitionList } from "services/connector/DestinationDefinitionService";
 import { useSourceDefinitionList } from "services/connector/SourceDefinitionService";
@@ -39,8 +39,7 @@ type FullTableProps = CreditConsumptionByConnector & {
 };
 
 const UsagePerConnectionTable: React.FC<UsagePerConnectionTableProps> = ({ creditConsumption }) => {
-  const query = useQuery<{ sortBy?: string; order?: SortOrderEnum }>();
-  const navigate = useNavigate();
+  const { query, push } = useRouter();
   const { sourceDefinitions } = useSourceDefinitionList();
   const { destinationDefinitions } = useDestinationDefinitionList();
 
@@ -70,7 +69,7 @@ const UsagePerConnectionTable: React.FC<UsagePerConnectionTableProps> = ({ credi
     (field: string) => {
       const order =
         sortBy !== field ? SortOrderEnum.ASC : sortOrder === SortOrderEnum.ASC ? SortOrderEnum.DESC : SortOrderEnum.ASC;
-      navigate({
+      push({
         search: queryString.stringify(
           {
             sortBy: field,
@@ -80,7 +79,7 @@ const UsagePerConnectionTable: React.FC<UsagePerConnectionTableProps> = ({ credi
         ),
       });
     },
-    [navigate, sortBy, sortOrder]
+    [push, sortBy, sortOrder]
   );
 
   const sortData = useCallback(
@@ -110,13 +109,14 @@ const UsagePerConnectionTable: React.FC<UsagePerConnectionTableProps> = ({ credi
     () => [
       {
         Header: (
-          <SortableTableHeader
-            onClick={() => onSortClick("connection")}
-            isActive={sortBy === "connection"}
-            isAscending={sortOrder === SortOrderEnum.ASC}
-          >
+          <>
             <FormattedMessage id="credits.connection" />
-          </SortableTableHeader>
+            <SortButton
+              wasActive={sortBy === "connection"}
+              lowToLarge={sortOrder === SortOrderEnum.ASC}
+              onClick={() => onSortClick("connection")}
+            />
+          </>
         ),
         customWidth: 30,
         accessor: "sourceDefinitionName",
@@ -131,13 +131,14 @@ const UsagePerConnectionTable: React.FC<UsagePerConnectionTableProps> = ({ credi
       },
       {
         Header: (
-          <SortableTableHeader
-            onClick={() => onSortClick("usage")}
-            isActive={sortBy === "usage"}
-            isAscending={sortOrder === SortOrderEnum.ASC}
-          >
+          <>
             <FormattedMessage id="credits.usage" />
-          </SortableTableHeader>
+            <SortButton
+              wasActive={sortBy === "usage"}
+              lowToLarge={sortOrder === SortOrderEnum.ASC}
+              onClick={() => onSortClick("usage")}
+            />
+          </>
         ),
         accessor: "creditsConsumed",
         collapse: true,

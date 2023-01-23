@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 export type DocumentationPanelContext = ReturnType<typeof useDocumentationPanelState>;
 
@@ -29,9 +29,16 @@ export const useDocumentationPanelState = () => {
 // @ts-expect-error Default value provided at implementation
 export const documentationPanelContext = createContext<DocumentationPanelContext>();
 
+export const useCloseDocumentationPanelEffect = () => {
+  const { setDocumentationPanelOpen } = useDocumentationPanelState();
+  useEffect(() => {
+    return setDocumentationPanelOpen(false);
+  }, [setDocumentationPanelOpen]);
+};
+
 export const useDocumentationPanelContext = () => useContext(documentationPanelContext);
 
-export const DocumentationPanelProvider: React.FC<React.PropsWithChildren<unknown>> = ({ children }) => {
+export const DocumentationPanelProvider: React.FC = ({ children }) => {
   return (
     <documentationPanelContext.Provider value={useDocumentationPanelState()}>
       {children}

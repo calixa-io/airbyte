@@ -2,29 +2,27 @@
 set -e
 
 # List of directories without "airbyte-" prefix.
-projectDir=(
-  "bootloader"
-  "config/init"
-  "container-orchestrator"
-  "cron"
-  "connector-builder-server"
-  "db/db-lib"
-  "metrics/reporter"
-  "proxy"
+projectDir=( 
+  "workers"
+  "cli"
+  "webapp"
   "server"
   "temporal"
-  "webapp"
-  "workers"
+  "container-orchestrator"
+  "config/init"
+  "bootloader"
+  "metrics/reporter"
+  "db/db-lib"
 )
 
 # Set default values to required vars. If set in env, values will be taken from there.
 # Primarily for testing.
-JDK_VERSION=${JDK_VERSION:-17.0.4}
+JDK_VERSION=${JDK_VERSION:-19-slim-bullseye}
 ALPINE_IMAGE=${ALPINE_IMAGE:-alpine:3.14}
 POSTGRES_IMAGE=${POSTGRES_IMAGE:-postgres:13-alpine}
 
 # Iterate over all directories in list to build one by one.
-# metrics-reporter are exception due to wrong artifact naming
+# metrics-reporter are exception due to wrong artifact naming 
 for workdir in "${projectDir[@]}"
   do
     case $workdir in
@@ -44,9 +42,6 @@ for workdir in "${projectDir[@]}"
         artifactName=${workdir%/*}
         ;;
     esac
-
-    echo "Publishing airbyte/$artifactName..."
-    sleep 1
 
     docker buildx create --use --name $artifactName &&      \
     docker buildx build -t "airbyte/$artifactName:$VERSION" \

@@ -67,6 +67,5 @@ def filter_secrets(string: str) -> str:
     # TODO this should perform a maximal match for each secret. if "x" and "xk" are both secret values, and this method is called twice on
     #  the input "xk", then depending on call order it might only obfuscate "*k". This is a bug.
     for secret in __SECRETS_FROM_CONFIG:
-        if secret:
-            string = string.replace(str(secret), "****")
+        string = string.replace(str(secret), "****")
     return string
