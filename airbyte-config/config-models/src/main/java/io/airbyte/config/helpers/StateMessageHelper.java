@@ -34,6 +34,8 @@ public class StateMessageHelper {
       return Optional.empty();
     } else {
       final List<AirbyteStateMessage> stateMessages;
+      // Optional[io.airbyte.config.State@4d4c6194[state=[{"type":"STREAM","stream":{"stream_descriptor":{"name":"engagements"},"stream_state":{"lastUpdated":1675445556370}}}]]]
+      //Optional[io.airbyte.config.State@7ca45442[state={"cdc":false,"streams":[{"stream_name":"daily_session_leng
       try {
         stateMessages = Jsons.object(state, new AirbyteStateMessageListTypeReference());
       } catch (final IllegalArgumentException e) {
@@ -131,7 +133,7 @@ public class StateMessageHelper {
     } else {
       return new StateWrapper()
           .withStateType(StateType.LEGACY)
-          .withLegacyState(Iterables.getLast(stateMessages).getData());
+          .withLegacyState(Iterables.getLast(stateMessages).getStream().getStreamState());
     }
   }
 
