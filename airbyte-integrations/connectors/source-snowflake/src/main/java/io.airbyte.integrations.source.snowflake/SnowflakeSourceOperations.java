@@ -23,13 +23,21 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.OffsetTime;
+import java.time.format.DateTimeParseException;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SnowflakeSourceOperations extends JdbcSourceOperations {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SnowflakeSourceOperations.class);
+  // HACK: See https://linear.app/calixa/issue/CAL-2656/happy-scribe-snowflake-sync-failing
+  // and https://github.com/airbytehq/airbyte/issues/23103
+  private static final Set<JDBCType> EXTRA_ALLOWED_CURSOR_TYPES = Set.of(JDBCType.TIME_WITH_TIMEZONE, JDBCType.TIMESTAMP_WITH_TIMEZONE);
 
   @Override
   protected void putDouble(final ObjectNode node, final String columnName, final ResultSet resultSet, final int index) {
@@ -138,4 +146,40 @@ public class SnowflakeSourceOperations extends JdbcSourceOperations {
     node.put(columnName, DateTimeConverter.convertToTime(localTime));
   }
 
+  @Override
+  public boolean isCursorType(JDBCType type) {
+    return super.isCursorType(type) || EXTRA_ALLOWED_CURSOR_TYPES.contains(type);
+  }
+
+  @Override
+  public void setCursorField(PreparedStatement preparedStatement, int parameterIndex,
+      JDBCType cursorFieldType, String value) throws SQLException {
+    switch (cursorFieldType) {
+      case TIME_WITH_TIMEZONE -> setTimeWithTimezone(preparedStatement, parameterIndex, value);
+      case TIMESTAMP_WITH_TIMEZONE -> setTimestampWithTimezone(preparedStatement, parameterIndex, value);
+      default -> super.setCursorField(preparedStatement, parameterIndex, cursorFieldType, value);
+    }
+  }
+
+  // HACK: copied from io.airbyte.integrations.source.postgres.PostgresSourceOperations.setTimeWithTimezone
+  private void setTimeWithTimezone(final PreparedStatement preparedStatement, final int parameterIndex, final String value) throws SQLException {
+    try {
+      preparedStatement.setObject(parameterIndex, OffsetTime.parse(value));
+    } catch (final DateTimeParseException e) {
+      // attempt to parse the time w/o timezone. This can be caused by schema created with a different
+      // version of the connector
+      preparedStatement.setObject(parameterIndex, LocalTime.parse(value));
+    }
+  }
+
+  // HACK: copied from io.airbyte.integrations.source.postgres.PostgresSourceOperations.setTimestampWithTimezone
+  private void setTimestampWithTimezone(final PreparedStatement preparedStatement, final int parameterIndex, final String value) throws SQLException {
+    try {
+      preparedStatement.setObject(parameterIndex, OffsetDateTime.parse(value));
+    } catch (final DateTimeParseException e) {
+      // attempt to parse the datetime w/o timezone. This can be caused by schema created with a different
+      // version of the connector
+      preparedStatement.setObject(parameterIndex, LocalDateTime.parse(value));
+    }
+  }
 }
