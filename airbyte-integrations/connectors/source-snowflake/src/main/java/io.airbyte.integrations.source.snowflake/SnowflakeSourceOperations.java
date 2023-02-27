@@ -23,12 +23,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
-import java.time.OffsetTime;
-import java.time.format.DateTimeParseException;
 import java.util.Set;
+import net.snowflake.client.jdbc.SnowflakeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -161,25 +159,16 @@ public class SnowflakeSourceOperations extends JdbcSourceOperations {
     }
   }
 
-  // HACK: copied from io.airbyte.integrations.source.postgres.PostgresSourceOperations.setTimeWithTimezone
   private void setTimeWithTimezone(final PreparedStatement preparedStatement, final int parameterIndex, final String value) throws SQLException {
-    try {
-      preparedStatement.setObject(parameterIndex, OffsetTime.parse(value));
-    } catch (final DateTimeParseException e) {
-      // attempt to parse the time w/o timezone. This can be caused by schema created with a different
-      // version of the connector
-      preparedStatement.setObject(parameterIndex, LocalTime.parse(value));
-    }
+    throw new UnsupportedOperationException();
   }
 
-  // HACK: copied from io.airbyte.integrations.source.postgres.PostgresSourceOperations.setTimestampWithTimezone
-  private void setTimestampWithTimezone(final PreparedStatement preparedStatement, final int parameterIndex, final String value) throws SQLException {
-    try {
-      preparedStatement.setObject(parameterIndex, OffsetDateTime.parse(value));
-    } catch (final DateTimeParseException e) {
-      // attempt to parse the datetime w/o timezone. This can be caused by schema created with a different
-      // version of the connector
-      preparedStatement.setObject(parameterIndex, LocalDateTime.parse(value));
-    }
+  private void setTimestampWithTimezone(final PreparedStatement preparedStatement,
+      final int parameterIndex, final String value) throws SQLException {
+
+    OffsetDateTime offsetDateTime = OffsetDateTime.parse(value);
+    var ts = Timestamp.from(offsetDateTime.toInstant());
+    // https://docs.snowflake.com/en/sql-reference/data-types-datetime#timestamp-ltz-timestamp-ntz-timestamp-tz
+    preparedStatement.setObject(parameterIndex, ts, SnowflakeUtil.EXTRA_TYPES_TIMESTAMP_LTZ);
   }
 }
