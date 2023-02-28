@@ -35,7 +35,7 @@ public class SnowflakeSourceOperations extends JdbcSourceOperations {
   private static final Logger LOGGER = LoggerFactory.getLogger(SnowflakeSourceOperations.class);
   // HACK: See https://linear.app/calixa/issue/CAL-2656/happy-scribe-snowflake-sync-failing
   // and https://github.com/airbytehq/airbyte/issues/23103
-  private static final Set<JDBCType> EXTRA_ALLOWED_CURSOR_TYPES = Set.of(JDBCType.TIME_WITH_TIMEZONE, JDBCType.TIMESTAMP_WITH_TIMEZONE);
+  private static final Set<JDBCType> EXTRA_ALLOWED_CURSOR_TYPES = Set.of(JDBCType.TIMESTAMP_WITH_TIMEZONE);
 
   @Override
   protected void putDouble(final ObjectNode node, final String columnName, final ResultSet resultSet, final int index) {
@@ -107,9 +107,9 @@ public class SnowflakeSourceOperations extends JdbcSourceOperations {
     // TIMESTAMPLTZ data type detected as JDBCType.TIMESTAMP which is not correct
     if ("TIMESTAMPLTZ".equalsIgnoreCase(columnTypeName)) {
       putTimestampWithTimezone(json, columnName, resultSet, colIndex);
-      return;
+    } else {
+      super.copyToJsonField(resultSet, colIndex, json);
     }
-    super.copyToJsonField(resultSet, colIndex, json);
   }
 
   @Override
@@ -153,14 +153,9 @@ public class SnowflakeSourceOperations extends JdbcSourceOperations {
   public void setCursorField(PreparedStatement preparedStatement, int parameterIndex,
       JDBCType cursorFieldType, String value) throws SQLException {
     switch (cursorFieldType) {
-      case TIME_WITH_TIMEZONE -> setTimeWithTimezone(preparedStatement, parameterIndex, value);
       case TIMESTAMP_WITH_TIMEZONE -> setTimestampWithTimezone(preparedStatement, parameterIndex, value);
       default -> super.setCursorField(preparedStatement, parameterIndex, cursorFieldType, value);
     }
-  }
-
-  private void setTimeWithTimezone(final PreparedStatement preparedStatement, final int parameterIndex, final String value) throws SQLException {
-    throw new UnsupportedOperationException();
   }
 
   private void setTimestampWithTimezone(final PreparedStatement preparedStatement,
