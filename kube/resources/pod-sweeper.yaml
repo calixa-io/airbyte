@@ -5,11 +5,10 @@ metadata:
 data:
   sweep-pod.sh: |
     #!/bin/bash
-
-    get_worker_pods () {
-      kubectl -n ${KUBE_NAMESPACE} -L airbyte -l airbyte=worker-pod \
-        --field-selector status.phase!=Running get pods \
-        -o=jsonpath='{range .items[*]} {.metadata.name} {.status.phase} {.status.conditions[0].lastTransitionTime} {.status.startTime}{"\n"}{end}'
+    get_worker_pods() {
+      kubectl -n ${KUBE_NAMESPACE} -L airbyte \
+      --field-selector status.phase!=Running get pods \
+      -o=jsonpath='{range .items[*]} {.metadata.name} {.status.phase} {.status.conditions[0].lastTransitionTime} {.status.startTime}{"\n"}{end}'
     }
 
     delete_worker_pod() {
@@ -17,68 +16,87 @@ data:
       echo "$1" | grep -v "STATUS" | awk '{print $1}' | xargs --no-run-if-empty kubectl -n ${KUBE_NAMESPACE} delete pod
     }
 
-    while :
-    do
-      # Shorter time window for completed pods
-      SUCCESS_DATE_STR=`date -d 'now - 2 hours' --utc -Ins`
-      SUCCESS_DATE=`date -d $SUCCESS_DATE_STR +%s`
-      # Longer time window for pods in error (to debug)
-      NON_SUCCESS_DATE_STR=`date -d 'now - 24 hours' --utc -Ins`
-      NON_SUCCESS_DATE=`date -d $NON_SUCCESS_DATE_STR +%s`
-      (
-          IFS=$'\n'
-          for POD in `get_worker_pods`; do
-              IFS=' '
-              POD_NAME=`echo $POD | cut -d " " -f 1`
-              POD_STATUS=`echo $POD | cut -d " " -f 2`
-              POD_DATE_STR=`echo $POD | cut -d " " -f 3`
-              POD_START_DATE_STR=`echo $POD | cut -d " " -f 4`
-              POD_DATE=`date -d ${POD_DATE_STR:-$POD_START_DATE_STR} '+%s'`
-              if [ "$POD_STATUS" = "Succeeded" ]; then
-                if [ "$POD_DATE" -lt "$SUCCESS_DATE" ]; then
-                  delete_worker_pod "$POD_NAME" "$POD_STATUS" "$POD_DATE_STR"
-                fi
-              else
-                if [ "$POD_DATE" -lt "$NON_SUCCESS_DATE" ]; then
-                  delete_worker_pod "$POD_NAME" "$POD_STATUS" "$POD_DATE_STR"
-                fi
-              fi
-          done
-      )
-      sleep 60
-    done
+    echo "Starting Airbyte Sweeper process for namespace '${KUBE_NAMESPACE}'"
+
+    # Shorter time window for completed pods
+    SUCCESS_DATE_STR=$(date -d 'now - 2 hours' --utc -Ins)
+    SUCCESS_DATE=$(date -d $SUCCESS_DATE_STR +%s)
+    echo "Success date cut-off: ${SUCCESS_DATE_STR}"
+    # Longer time window for pods in error (to debug)
+    NON_SUCCESS_DATE_STR=$(date -d 'now - 24 hours' --utc -Ins)
+    NON_SUCCESS_DATE=$(date -d $NON_SUCCESS_DATE_STR +%s)
+    echo "Failure date cut-off: ${NON_SUCCESS_DATE_STR}"
+    (
+      IFS=$'\n'
+      for POD in $(get_worker_pods); do
+        echo "Checking state for pod '${POD}'..."
+        
+        IFS=' '
+        POD_NAME=$(echo $POD | cut -d " " -f 1)
+        POD_STATUS=$(echo $POD | cut -d " " -f 2)
+        POD_DATE_STR=$(echo $POD | cut -d " " -f 3)
+        POD_START_DATE_STR=$(echo $POD | cut -d " " -f 4)
+        POD_DATE=$(date -d ${POD_DATE_STR:-$POD_START_DATE_STR} '+%s')
+        
+        if [ "$POD_STATUS" = "Succeeded" ]; then
+        if [ "$POD_DATE" -lt "$SUCCESS_DATE" ]; then
+            echo "Deleting succeeded pod '${POD_NAME}' since it is old: ${POD_DATE_STR}"
+            delete_worker_pod "$POD_NAME" "$POD_STATUS" "$POD_DATE_STR"
+        else
+          echo "Keeping succeeded pod '${POD_NAME}' since it is still recent: ${POD_DATE_STR}"
+        fi
+        else
+          if [ "$POD_DATE" -lt "$NON_SUCCESS_DATE" ]; then
+            echo "Deleting failed pod '${POD_NAME}' (${POD_STATUS}) since it is old: ${POD_DATE_STR}"
+            delete_worker_pod "$POD_NAME" "$POD_STATUS" "$POD_DATE_STR"
+          else
+            echo "Keeping failed pod '${POD_NAME}' (${POD_STATUS}) since it is still recent: ${POD_DATE_STR}"
+          fi
+        fi
+      done
+    )
+
+    echo "Done. Exiting."
 ---
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: batch/v1
+kind: CronJob
 metadata:
-  name: airbyte-pod-sweeper
+  name: airbyte-pod-sweeper-cron
 spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      airbyte: pod-sweeper
-  template:
-    metadata:
-      labels:
-        airbyte: pod-sweeper
+  # At every 20th minute.
+  schedule: "*/20 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
     spec:
-      serviceAccountName: airbyte-admin
-      containers:
-        - name: airbyte-pod-sweeper
-          image: bitnami/kubectl
-          imagePullPolicy: IfNotPresent
-          env:
-            - name: KUBE_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
-          volumeMounts:
-            - mountPath: /script/sweep-pod.sh
-              subPath: sweep-pod.sh
-              name: sweep-pod-script
-          command: ["/bin/bash", "-c", /script/sweep-pod.sh]
-      volumes:
-        - name: sweep-pod-script
-          configMap:
-            name: sweep-pod-script
-            defaultMode: 0755
+      template:
+        metadata:
+          labels:
+            airbyte: pod-sweeper
+        spec:
+          restartPolicy: Never
+          serviceAccountName: airbyte-admin
+          containers:
+            - name: airbyte-pod-sweeper
+              image: bitnami/kubectl
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: KUBE_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+              volumeMounts:
+                - mountPath: /script/sweep-pod.sh
+                  subPath: sweep-pod.sh
+                  name: sweep-pod-script
+              command: ["/bin/bash", "-c", /script/sweep-pod.sh]
+              resources:
+                  requests:
+                    cpu: 250m
+                    memory: 512Mi
+          volumes:
+            - name: sweep-pod-script
+              configMap:
+                name: sweep-pod-script
+                defaultMode: 0755
