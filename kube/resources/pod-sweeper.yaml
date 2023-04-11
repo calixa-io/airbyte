@@ -64,7 +64,7 @@ data:
 apiVersion: apps/v1
 kind: CronJob
 metadata:
-  name: airbyte-pod-sweeper
+  name: airbyte-pod-sweeper-cron
 spec:
   selector:
     matchLabels:
