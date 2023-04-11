@@ -61,14 +61,11 @@ data:
     echo ""
     echo "Done. Exiting."
 ---
-apiVersion: apps/v1
+apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: airbyte-pod-sweeper-cron
 spec:
-  selector:
-    matchLabels:
-      airbyte: pod-sweeper
   # At every 20th minute.
   schedule: "*/20 * * * *"
   concurrencyPolicy: Forbid
@@ -76,28 +73,29 @@ spec:
   failedJobsHistoryLimit: 1
   jobTemplate:
     spec:
-  template:
-    metadata:
-      labels:
-        airbyte: pod-sweeper
-    spec:
-      serviceAccountName: airbyte-admin
-      containers:
-        - name: airbyte-pod-sweeper
-          image: bitnami/kubectl
-          imagePullPolicy: IfNotPresent
-          env:
-            - name: KUBE_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
-          volumeMounts:
-            - mountPath: /script/sweep-pod.sh
-              subPath: sweep-pod.sh
-              name: sweep-pod-script
-          command: ["/bin/bash", "-c", /script/sweep-pod.sh]
-      volumes:
-        - name: sweep-pod-script
-          configMap:
-            name: sweep-pod-script
-            defaultMode: 0755
+      template:
+        metadata:
+          labels:
+            airbyte: pod-sweeper
+        spec:
+          restartPolicy: Never
+          serviceAccountName: airbyte-admin
+          containers:
+            - name: airbyte-pod-sweeper
+              image: bitnami/kubectl
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: KUBE_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+              volumeMounts:
+                - mountPath: /script/sweep-pod.sh
+                  subPath: sweep-pod.sh
+                  name: sweep-pod-script
+              command: ["/bin/bash", "-c", /script/sweep-pod.sh]
+          volumes:
+            - name: sweep-pod-script
+              configMap:
+                name: sweep-pod-script
+                defaultMode: 0755
