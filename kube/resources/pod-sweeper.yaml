@@ -26,7 +26,6 @@ data:
     NON_SUCCESS_DATE_STR=$(date -d 'now - 24 hours' --utc -Ins)
     NON_SUCCESS_DATE=$(date -d $NON_SUCCESS_DATE_STR +%s)
     echo "Failure date cut-off: ${NON_SUCCESS_DATE_STR}"
-    echo ""
     (
       IFS=$'\n'
       for POD in $(get_worker_pods); do
@@ -54,11 +53,9 @@ data:
             echo "Keeping failed pod '${POD_NAME}' (${POD_STATUS}) since it is still recent: ${POD_DATE_STR}"
           fi
         fi
-        echo ""
       done
     )
 
-    echo ""
     echo "Done. Exiting."
 ---
 apiVersion: batch/v1
