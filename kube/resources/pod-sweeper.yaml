@@ -66,6 +66,9 @@ kind: CronJob
 metadata:
   name: airbyte-pod-sweeper
 spec:
+  selector:
+    matchLabels:
+      airbyte: pod-sweeper
   # At every 20th minute.
   schedule: "*/20 * * * *"
   concurrencyPolicy: Forbid
