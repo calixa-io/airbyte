@@ -76,7 +76,6 @@ spec:
             airbyte: pod-sweeper
         spec:
           restartPolicy: Never
-          serviceAccountName: airbyte-admin
           containers:
             - name: airbyte-pod-sweeper
               image: bitnami/kubectl
