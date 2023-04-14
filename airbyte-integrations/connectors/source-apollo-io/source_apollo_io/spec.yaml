@@ -1,0 +1,12 @@
+documentationUrl: https://docs.airbyte.com/integrations/sources/apollo-io
+connectionSpecification:
+  $schema: http://json-schema.org/draft-07/schema#
+  title: Apollo Io Spec
+  type: object
+  required:
+    - api_key
+  properties:
+    api_key:
+      type: string
+      title: API Key
+      description: Apollo API key. See the <a href="https://docs.airbyte.com/integrations/sources/apollo-io#setup-guide">setup guide</a> for more information on how to obtain this key.
