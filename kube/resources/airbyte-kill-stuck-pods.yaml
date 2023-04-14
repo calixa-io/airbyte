@@ -163,17 +163,17 @@ spec:
           containers:
             - name: airbyte-kill-stuck-pods
               image: gcr.io/calixa-cloudbuild-5a1f/kubectl-node:latest
-#              image: bitnami/kubectl
               imagePullPolicy: Always
               env:
                 - name: KUBE_NAMESPACE
-                  value: airbyte
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
               volumeMounts:
                 - mountPath: /script/airbyte_kill_stuck_pods.js
                   subPath: airbyte_kill_stuck_pods.js
                   name: airbyte-kill-stuck-pods-script
               command: [ "node", /script/airbyte_kill_stuck_pods.js ]
-#              command: [ "/bin/bash", "-c", "kubectl -n calixa-crons get pods" ]
               resources:
                 requests:
                   cpu: 250m
