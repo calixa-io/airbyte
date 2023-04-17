@@ -70,8 +70,8 @@ data:
                 info(
                     `Found stuck pod ${stuck_pod_name} (${finished_at}, age millis = ${age_millis})`)
                 stuck_pods.push(stuck_pod_name)
-              }
               break
+              }
             }
           }
         }
