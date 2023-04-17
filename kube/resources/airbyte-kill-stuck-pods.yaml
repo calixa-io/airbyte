@@ -54,27 +54,24 @@ data:
     
         if (airbyte_label === 'job-pod') {
           const container_statuses = dig(item, 'status', 'containerStatuses')
-          // if the "main" container is terminated, consider the pod as stuck,
-          // since the overall pod is still reported as "running"
+          // The pod is in "running" state (according to kubectl).
+          // If any of its containers are in terminated error state, the pod is stuck.
+    
           for (let i = 0; i < container_statuses.length; i++) {
-            let name = container_statuses[i]['name']
+            let status = container_statuses[i]['state']
     
-            if (name === 'main') {
-              let status = container_statuses[i]['state']
+            if (status['terminated'] && status['terminated']['exitCode'] !== 0) {
+              let finished_at = status['terminated']['finishedAt']
+              let age_millis = Date.now() - Date.parse(finished_at)
     
-              if (status['terminated']) {
-    
-                let finished_at = status['terminated']['finishedAt']
-                let age_millis = Date.now() - Date.parse(finished_at)
-    
-                //  there appears to be a race condition, so we check that now - status['finishedAt'] > 5 min
-                if (age_millis > 60 * 5 * 1000) {
-                  let stuck_pod_name = dig(item, 'metadata', 'name')
-                  info(`Found stuck pod ${stuck_pod_name} (${finished_at}, age millis = ${age_millis})`)
-                  stuck_pods.push(stuck_pod_name)
-                }
-              }
+              //  there appears to be a race condition, so we check that now - status['finishedAt'] > 5 min
+              if (age_millis > 60 * 5 * 1000) {
+                let stuck_pod_name = dig(item, 'metadata', 'name')
+                info(
+                    `Found stuck pod ${stuck_pod_name} (${finished_at}, age millis = ${age_millis})`)
+                stuck_pods.push(stuck_pod_name)
               break
+              }
             }
           }
         }
