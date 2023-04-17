@@ -160,7 +160,7 @@ spec:
           containers:
             - name: airbyte-kill-stuck-pods
               image: gcr.io/calixa-cloudbuild-5a1f/kubectl-node:latest
-              imagePullPolicy: Always
+              imagePullPolicy: IfNotPresent
               env:
                 - name: KUBE_NAMESPACE
                   valueFrom:
