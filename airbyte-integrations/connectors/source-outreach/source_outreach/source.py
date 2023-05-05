@@ -131,6 +131,11 @@ class OutreachAuthenticator(Oauth2Authenticator):
 
 # Source
 class SourceOutreach(AbstractSource):
+
+    @property
+    def per_stream_state_enabled(self) -> bool:
+        return False
+
     def _create_authenticator(self, config):
         return OutreachAuthenticator(
             redirect_uri=config["redirect_uri"],
